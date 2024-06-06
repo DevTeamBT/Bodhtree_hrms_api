@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema({
   graderade :{type: "string"},
   location:{type: "string"},
   company:{type: "string"},
-  Shift:{type: "string"},
+  shift:{type: "string"},
   holidayCategory:{type: "string"},
   emergencyContactNumber:{type: "string"},
   emergencyContactName:{type: "string"},
