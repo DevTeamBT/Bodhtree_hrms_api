@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema({
   native: {type:"string"},
   address: {type:"string"},
   enterCode: {type:"string",required: true},
+  enterseries: {type: "string"},
   enterPassword: {type:"string", required: true, unique: true},
   roleId: {type: mongoose.Schema.Types.String, ref:'empRole', required: true},
   photo: {type: "string"},
