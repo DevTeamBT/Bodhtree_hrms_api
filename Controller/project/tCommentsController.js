@@ -58,9 +58,25 @@ const getComments = async (req,res) => {
     }
 };
 
+const getTcomments = async (req,res) => {
+    const tId = req.params.taskId; 
+    try {
+        const description = await Comment.find({ tId }).select('tcDesc tcAssignedTo');
+        if (description.length === 0) {
+            return res.status(404).json({ message: 'No description found for this task' });
+        }
+        res.json(description);
+    } catch (error) {
+        // Handle errors
+        console.error(error);
+        res.status(500).json({ message: 'Failed to get description' });
+    }
+};
+
 
 module.exports = {
     createComment:createComment,
     getComment:getComment,
-    getComments:getComments
+    getComments:getComments,
+    getTcomments:getTcomments
 }

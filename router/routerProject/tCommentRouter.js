@@ -7,6 +7,6 @@ const taskComments = require('../../Controller/project/tCommentsController');
 router.post('/add/comment', taskComments.createComment);
 router.get('/comment/:id', taskComments.getComment);
 router.get('/comments', taskComments.getComments)
-
+router.get('/tcomment/:taskId', taskComments.getTcomments)
 
 module.exports = router;
