@@ -8,30 +8,30 @@ const User = require('../../schema/Employee/userSchema');
 const createTask = async (req,res) => {
     try {
         // Extract task data from request body
-        const { tTitle, tDesc, tStatus, tAssignedTo } = req.body;
+        const { tTitle, tDesc, tStatus } = req.body;
         // Check if pId and tAssignedTo are valid ObjectId strings
-        // !mongoose.Types.ObjectId.isValid(pId) ||
-        if ( !mongoose.Types.ObjectId.isValid(tAssignedTo)) {
-            return res.status(400).json({ message: 'Invalid ObjectId format for pId or tAssignedTo' });
-        }
+        // if ( !mongoose.Types.ObjectId.isValid(pId) || !mongoose.Types.ObjectId.isValid(tAssignedTo)) {
+        //     return res.status(400).json({ message: 'Invalid ObjectId format for pId or tAssignedTo' });
+        // }
         // Fetch the pTitle from Project collection
         // const projectTitle = await Project.findById(pId);
         // if (!projectTitle) {
         //     return res.status(404).json({ message: 'project title not found' });
         // }
         // Fetch the fullName from User collection
-        const assignedUser = await User.findById(tAssignedTo);
-        if (!assignedUser) {
-            return res.status(404).json({ message: 'Assigned user not found' });
-        }
+        // const assignedUser = await User.findById(tAssignedTo);
+        // if (!assignedUser) {
+        //     return res.status(404).json({ message: 'Assigned user not found' });
+        // }
         const taskStatus = tStatus || 'pending';
         // Create new task instance
         const newTask = new Task({
+            id: Task.length + 1,
             // pId,
             tTitle,
             tDesc,
             tStatus : taskStatus,
-            tAssignedTo: assignedUser.fullName
+            // tAssignedTo: assignedUser.fullName
         });
         // Save the task to the database
         const savedTask = await newTask.save();
@@ -43,7 +43,6 @@ const createTask = async (req,res) => {
         res.status(500).json({ message: 'Failed to create tasks' });
     }
 };
-
 
 const getTask = async (req,res) => {
     try {   
