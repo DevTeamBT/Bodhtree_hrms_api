@@ -27,7 +27,6 @@ const createTask = async (req,res) => {
         // Create new task instance
         const newTask = new Task({
             id: Task.length + 1,
-            // pId,
             tTitle,
             tDesc,
             tStatus : taskStatus,
