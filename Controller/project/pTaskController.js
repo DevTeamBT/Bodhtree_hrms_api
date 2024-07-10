@@ -8,9 +8,10 @@ const User = require('../../schema/Employee/userSchema');
 const createTask = async (req,res) => {
     try {
         // Extract task data from request body
-        const { tTitle, tDesc, tStatus } = req.body;
+        const { tTitle, tDesc, tStatus, tAssignedTo } = req.body;
         // Check if pId and tAssignedTo are valid ObjectId strings
-        // if ( !mongoose.Types.ObjectId.isValid(pId) || !mongoose.Types.ObjectId.isValid(tAssignedTo)) {
+        // !mongoose.Types.ObjectId.isValid(pId) ||
+        // if ( !mongoose.Types.ObjectId.isValid(tAssignedTo)) {
         //     return res.status(400).json({ message: 'Invalid ObjectId format for pId or tAssignedTo' });
         // }
         // Fetch the pTitle from Project collection
@@ -27,6 +28,7 @@ const createTask = async (req,res) => {
         // Create new task instance
         const newTask = new Task({
             id: Task.length + 1,
+            // pId,
             tTitle,
             tDesc,
             tStatus : taskStatus,
