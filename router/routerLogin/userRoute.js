@@ -4,6 +4,7 @@ const router = express.Router();
 
 const loginController = require('../../Controller/login/loginController');
 const userController   = require('../../Controller/login/userEmpController'); 
+const authMiddleware = require('../../middleware/auth');
 
 const createUser = userController.createUser;
 const getUsers = userController.getUsers;
@@ -17,18 +18,19 @@ const updateEmp = userController.updateEmp;
 
 const userLogin = loginController.userLogin;
 
-
-router.post('/api/users', createUser);
+// router.post('/api/users', authMiddleware,createUser);
+router.post('/api/users',createUser);
 router.get('/api/users', getUsers);
 router.get('/api/users/:id', getUser);
 router.post('/api/role', addRole);
-router.get('/roles',getRoles);
-router.post('/api/derpement',createDept);
-router.get('/api/dept',getAllDept);
+router.get('/roles', getRoles);
+router.post('/api/derpement', createDept);
+router.get('/api/dept', getAllDept);
 router.put('/user/:_id', updateEmp)
 
 
 router.post('/api/login', userLogin);
+
 
 
 module.exports = router;

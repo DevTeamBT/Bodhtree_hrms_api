@@ -1,5 +1,6 @@
 
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const User = require('../../schema/Employee/userSchema'); 
 const Role = require('../../schema/Employee/roleSchema');
 const Dept = require('../../schema/Employee/departmentSchema');
@@ -28,9 +29,12 @@ const createUser = async (req, res) => {
   if (!role) {
     return res.status(404).json({ error: 'Role not found' });
   }
+    // const salt = await bcrypt.genSalt(10);
+    // const hashedPassword = await bcrypt.hash(req.body.enterPassword, salt);
   // Create new user with roleName
   const newUser = new User({
     ...req.body,
+    // enterPassword: hashedPassword,
     roleId: role.roleName ,
     department: req.body.department ? req.body.department.toLowerCase().replace(/[^a-z]/g, '') : undefined,
   });

@@ -1,9 +1,12 @@
 const express = require('express');
+require('dotenv').config();
 const mongoose = require('mongoose');
 const userRoutes = require('./router/routerLogin/userRoute'); 
 const projectRoutes = require('./router/routerProject/projectRouter');
 const taskRouter = require('./router/routerProject/pTaskRouter');
 const comment = require('./router/routerProject/tCommentRouter');
+// const cors = require('cors');
+const auth = require('./router/authRouter/authRouter');
 
 const cors = require('cors');
 
@@ -34,6 +37,7 @@ app.use(userRoutes);
 app.use(projectRoutes);
 app.use(taskRouter);
 app.use(comment);
+app.use(auth);
 
 
 
