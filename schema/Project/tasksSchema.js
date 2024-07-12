@@ -6,7 +6,7 @@ const taskSchema = new mongoose.Schema({
     tDesc: { type: String, required: true},
     tStatus: { type: String, enum: ["pending", "working", "onhold", "completed"], default: "pending"},
     tCreatedOn: { type: Date, default: Date.now},
-    tAssignedTo: { type: mongoose.Schema.Types.String, ref:'User'},
+    tAssignedTo: [{ type: mongoose.Schema.Types.String, ref: 'User' }],
 });
 
 const Task = mongoose.model('Task', taskSchema);

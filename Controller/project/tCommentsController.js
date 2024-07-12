@@ -38,7 +38,7 @@ const createComment = async (req, res) => {
 
 const getComment = async (req,res) => {
     try {   
-        const comment = await Comment.findOne(); 
+        const comment = await Comment.findById(req.params.id); 
         res.json(comment);
     } catch (error) {
         // Handle errors
@@ -46,6 +46,7 @@ const getComment = async (req,res) => {
         res.status(500).json({ message: 'Failed to get Comment' });
     }
 };
+
 
 const getComments = async (req,res) => {
     try {
