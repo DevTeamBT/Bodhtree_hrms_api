@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema({
-    pId:{type: mongoose.Schema.Types.String, ref:'Project'},
+    // pId:{type: mongoose.Schema.Types.String, ref:'Project'},
     tTitle: {type: String,required: true},
     tDesc: { type: String, required: true},
     tStatus: { type: String, enum: ["pending", "working", "onhold", "completed"], default: "pending"},

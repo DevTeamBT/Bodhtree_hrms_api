@@ -5,36 +5,46 @@ const User = require('../../schema/Employee/userSchema');
 
 
 const createComment = async (req, res) => {
-    try {
-        const { pId, tId, tcDesc, tcStatus } = req.body;
-        if (!mongoose.Types.ObjectId.isValid(pId) || !mongoose.Types.ObjectId.isValid(tId)) {
-            return res.status(400).json({ message: 'Invalid ObjectId format for pId or tId' });
-        }
-        else {
-            const { pId, tId, tcDesc, tcStatus} = req.body;
-            // Find the task to get the assignTo field
-            const task = await Task.findById(tId);
-            if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
-            }
-            // Create the comment with the tcAssignedTo field dynamically set
-            const newComment = new Comment({
-            pId,
-            tId,
-            tcDesc,
-            tcStatus,
-            tcAssignedTo: task.tAssignedTo 
-            });
-            // Save the comment to the database
-            const savedComment = await newComment.save();
-            res.status(201).json(savedComment);
-        }
-    } catch (error) {
-        // Handle errors
-        console.error(error);
-        res.status(500).json({ message: 'Failed to create Comment' });
+    const { taskId } = req.params;
+    const { tcDesc, tcAssignedTo } = req.body;
+  
+    if (!taskId || !tcDesc || !tcAssignedTo) {
+      return res.status(400).send({ error: 'Task ID, comment description, and assigned user are required' });
     }
-};
+  
+    try {
+      // Check if the task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        return res.status(404).send({ error: 'Task not found' });
+      }
+  
+      // Check if the user exists and validate the user ID
+      if (!mongoose.Types.ObjectId.isValid(tcAssignedTo)) {
+        return res.status(400).send({ error: 'Invalid ObjectId format for tcAssignedTo' });
+      }
+      const user = await User.findById(tcAssignedTo);
+      if (!user) {
+        return res.status(404).send({ error: 'User not found' });
+      }
+  
+      // Create and save the comment
+      const comment = new Comment({
+        tId: taskId,
+        tcDesc,
+        tcAssignedTo: user.fullName,
+      });
+  
+      await comment.save();
+      res.status(201).send(comment);
+    } catch (error) {
+      res.status(500).send({ error: 'Internal server error' });
+    }
+  };
+  
+
+
+
 
 const getComment = async (req,res) => {
     try {   
@@ -60,20 +70,27 @@ const getComments = async (req,res) => {
 };
 
 const getTcomments = async (req,res) => {
-    const tId = req.params.taskId; 
-    try {
-        const description = await Comment.find({ tId }).select('tcDesc tcAssignedTo');
-        if (description.length === 0) {
-            return res.status(404).json({ message: 'No description found for this task' });
-        }
-        res.json(description);
-    } catch (error) {
-        // Handle errors
-        console.error(error);
-        res.status(500).json({ message: 'Failed to get description' });
+    const { taskId } = req.params;
+  
+    if (!taskId) {
+      return res.status(400).send({ error: 'Task ID is required' });
     }
-};
-
+  
+    try {
+      // Check if the task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        return res.status(404).send({ error: 'Task not found' });
+      }
+  
+      // Fetch comments for the task
+      const comments = await Comment.find({ tId: taskId });
+  
+      res.status(200).send(comments);
+    } catch (error) {
+      res.status(500).send({ error: 'Internal server error' });
+    }
+  };
 
 module.exports = {
     createComment:createComment,
