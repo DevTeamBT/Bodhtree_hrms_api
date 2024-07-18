@@ -7,6 +7,7 @@ const taskSchema = new mongoose.Schema({
     tStatus: { type: String, enum: ["pending", "working", "onhold", "completed"], default: "pending"},
     tCreatedOn: { type: Date, default: Date.now},
     tAssignedTo: [{ type: mongoose.Schema.Types.String, ref: 'User' }],
+    active: { type: Boolean, default: true }
 });
 
 const Task = mongoose.model('Task', taskSchema);

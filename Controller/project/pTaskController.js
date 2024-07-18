@@ -8,7 +8,7 @@ const User = require('../../schema/Employee/userSchema');
 const createTask = async (req, res) => {
     try {
         // Extract task data from request body
-        const { tTitle, tDesc, tStatus, tAssignedTo } = req.body;
+        const { tTitle, tDesc, tStatus, tAssignedTo, active } = req.body;
 
         // Check if tAssignedTo is an array of valid ObjectId strings
         if (!Array.isArray(tAssignedTo) || !tAssignedTo.every(id => mongoose.Types.ObjectId.isValid(id))) {
@@ -29,8 +29,10 @@ const createTask = async (req, res) => {
             // pId,
             tTitle,
             tDesc,
+            active , 
             tStatus: taskStatus,
-            tAssignedTo: assignedUsers.map(user => user.fullName)  
+            tAssignedTo: assignedUsers.map(user => user.fullName),
+           
         });
 
         // Save the task to the database
@@ -62,23 +64,59 @@ const getTasks = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const startIndex = (page - 1) * limit;
-        // Fetch tasks for the current page
-        const tasks = await Task.find().skip(startIndex).limit(limit); // Assuming Task is a MongoDB model
+        // Fetch only active tasks for the current page
+        const tasks = await Task.find({ active: true })
+            .skip(startIndex)
+            .limit(limit);
+        // Fetch all users' full names
         const users = await User.find({}, 'fullName');
-        // Count total number of tasks
-        const totalTasks = await Task.countDocuments();
+        // Count total number of active tasks
+        const totalTasks = await Task.countDocuments({ active: true });
         // Calculate total pages
         const totalPages = Math.ceil(totalTasks / limit);
-        res.json({ tasks, totalPages , users});
+        res.json({ tasks, totalPages, users });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Failed to fetch tasks' });
     }
   };
 
+
+//   const deleteAllTask = async (req,res) => {
+//     try {
+//         // Fetch only active tasks
+//         const activeTasks = await Task.find({ active: true });
+//         res.status(200).json(activeTasks);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error fetching tasks', error });
+//     }
+//   };
+
+
+  const deleteTask = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const task = await Task.findByIdAndUpdate(
+            id,
+            { active: false },
+            { new: true } // Return the updated document
+        );
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        res.status(200).json({ message: 'Task set to inactive successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating task', error });
+    }
+  }
+
+
+
 module.exports = {
     createTask:createTask,
     getTask: getTask,
-    getTasks: getTasks
+    getTasks: getTasks,
+    // deleteAllTask:deleteAllTask,
+    deleteTask:deleteTask
 
 }
