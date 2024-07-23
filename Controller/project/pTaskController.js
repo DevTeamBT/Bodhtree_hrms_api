@@ -113,40 +113,51 @@ const updateTask = async (req,res) => {
     try {
         const { id } = req.params;
         const { tDesc, tAssignedTo, tStatus } = req.body;
+    
         if (!tDesc && !tAssignedTo && !tStatus) {
             return res.status(400).json({ error: 'No fields provided to update' });
         }
-        // Fetch the existing task to get current assigned users
+    
+        // Fetch the existing task to ensure it exists
         const task = await Task.findById(id);
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
-        let assignedToNames = task.tAssignedTo;
+    
+        // Prepare the update object
+        const updateFields = {};
+    
+        if (tDesc) {
+            updateFields.tDesc = tDesc;
+        }
+    
         if (tAssignedTo && tAssignedTo.length > 0) {
             // Fetch full names for the given user IDs
             const users = await User.find({ _id: { $in: tAssignedTo } }, 'fullName');
-            const newAssignedToNames = users.map(user => user.fullName);
-
-            // Append new full names to existing list, ensuring no duplicates
-            assignedToNames = [...new Set([...assignedToNames, ...newAssignedToNames])];
+            const assignedToNames = users.map(user => user.fullName);
+    
+            updateFields.tAssignedTo = assignedToNames; // Store full names in the task
         }
+    
+        if (tStatus) {
+            updateFields.tStatus = tStatus;
+        }
+    
+        // Automatically update the createdOn date
+        updateFields.tCreatedOn = new Date();
+    
         // Update the task with new data
-        const updatedTask = await Task.findByIdAndUpdate(
-            id,
-            {
-                ...(tDesc && { tDesc }),
-                ...(assignedToNames.length > 0 && { tAssignedTo: assignedToNames }),
-                ...(tStatus && { tStatus }),
-            },
-            { new: true, runValidators: true }
-        );
+        const updatedTask = await Task.findByIdAndUpdate(id, updateFields, {
+            new: true,
+            runValidators: true
+        });
+    
         res.json(updatedTask);
     } catch (error) {
         console.error('Error updating task:', error);
         res.status(500).json({ message: 'Error in updating task', error });
     }
-};
-
+};    
 
 
 
