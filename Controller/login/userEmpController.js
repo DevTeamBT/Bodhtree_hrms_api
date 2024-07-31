@@ -21,21 +21,22 @@ const createUser = async (req, res) => {
     return res.status(400).json({ error: 'Invalid office email', details: 'Office email must end with @bodhtree.com.' });
   }
   // Validate roleId ObjectId
-  if (!mongoose.Types.ObjectId.isValid(req.body.roleId)) {
-    return res.status(400).json({ error: 'Invalid ObjectId format for roleId' });
-  }
+  // if (!mongoose.Types.ObjectId.isValid(req.body.roleId)) {
+  //   return res.status(400).json({ error: 'Invalid ObjectId format for roleId' });
+  // }
   // Find the role by roleId
-  const role = await Role.findById(req.body.roleId);
-  if (!role) {
-    return res.status(404).json({ error: 'Role not found' });
-  }
-    // const salt = await bcrypt.genSalt(10);
+  // const role = await Role.findById(req.body.roleId);
+  // if (!role) {
+  //   return res.status(404).json({ error: 'Role not found' });
+  // }
+  //   // const salt = await bcrypt.genSalt(10);
     // const hashedPassword = await bcrypt.hash(req.body.enterPassword, salt);
   // Create new user with roleName
   const newUser = new User({
     ...req.body,
     // enterPassword: hashedPassword,
-    roleId: role.roleName ,
+    // roleId: role.roleName ,
+    roleName: req.body.roleName ? req.body.roleName.toLowerCase().replace(/[^a-z]/g, '') : undefined,
     department: req.body.department ? req.body.department.toLowerCase().replace(/[^a-z]/g, '') : undefined,
   });
   const savedUser = await newUser.save();
