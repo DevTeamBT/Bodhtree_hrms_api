@@ -25,6 +25,8 @@ const userSchema = new mongoose.Schema({
   enterCode: {type:"string",required: true},
   enterseries: {type: "string", unique: true,},
   enterPassword: {type:"string", required: true, unique: true},
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
   // roleId: {type: mongoose.Schema.Types.String, ref:'empRole', required: true},
   roleName:{type: "string"},
   photo: {type: "string"},

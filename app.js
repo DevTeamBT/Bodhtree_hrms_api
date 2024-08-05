@@ -5,11 +5,12 @@ const userRoutes = require('./router/routerLogin/userRoute');
 const projectRoutes = require('./router/routerProject/projectRouter');
 const taskRouter = require('./router/routerProject/pTaskRouter');
 const comment = require('./router/routerProject/tCommentRouter');
+const password = require('./router/routerLogin/passwordRoute');
 // const cors = require('cors');
 const auth = require('./router/authRouter/authRouter');
 
 const cors = require('cors');
-
+require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -38,7 +39,7 @@ app.use(projectRoutes);
 app.use(taskRouter);
 app.use(comment);
 app.use(auth);
-
+app.use(password)
 
 
 app.listen(PORT, () => {
