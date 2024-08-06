@@ -74,7 +74,7 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Password reset token is invalid' });
+      return res.status(400).json({ message: 'Password already updated' });
     }
 
     if (user.resetPasswordExpires < Date.now()) {
