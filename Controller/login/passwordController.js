@@ -61,7 +61,11 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   const { token } = req.params;
-  const { enterPassword } = req.body;
+  const { enterPassword, confirmPassword } = req.body;
+
+  if (enterPassword !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwords do not match' });
+  }
 
   try {
     const user = await User.findOne({
@@ -73,7 +77,7 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Password reset token is invalid or has expired' });
     }
 
-    user.enterPassword = enterPassword; // Store password as plain text (not recommended)
+    user.password = enterPassword; // Store password as plain text (not recommended)
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
