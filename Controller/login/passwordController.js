@@ -74,7 +74,11 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Password reset token is invalid or has expired' });
+      return res.status(400).json({ message: 'Password reset token is invalid' });
+    }
+
+    if (user.resetPasswordExpires < Date.now()) {
+      return res.status(400).json({ message: 'Password reset token has expired' });
     }
 
     user.password = enterPassword; // Store password as plain text (not recommended)
