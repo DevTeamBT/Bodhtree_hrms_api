@@ -6,9 +6,9 @@ const User = require('../../schema/Employee/userSchema');
 
 const createComment = async (req, res) => {
     const { taskId } = req.params;
-    const { tcDesc, tcAssignedTo } = req.body;
+    const { tComments, tcAssignedTo, duration} = req.body;
   
-    if (!taskId || !tcDesc || !tcAssignedTo) {
+    if (!taskId || !tComments || !tcAssignedTo) {
       return res.status(400).send({ error: 'Task ID, comment description, and assigned user are required' });
     }
   
@@ -31,8 +31,9 @@ const createComment = async (req, res) => {
       // Create and save the comment
       const comment = new Comment({
         tId: taskId,
-        tcDesc,
+        tComments,
         tcAssignedTo: user.fullName,
+        duration
       });
   
       await comment.save();

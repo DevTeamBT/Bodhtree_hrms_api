@@ -8,7 +8,7 @@ const User = require('../../schema/Employee/userSchema');
 const createTask = async (req, res) => {
     try {
         // Extract task data from request body
-        const { tTitle, tDesc, tStatus, tAssignedTo, active } = req.body;
+        const { tTitle, tDesc, tStatus, priority, tAssignedTo, active } = req.body;
 
         // Check if tAssignedTo is an array of valid ObjectId strings
         if (!Array.isArray(tAssignedTo) || !tAssignedTo.every(id => mongoose.Types.ObjectId.isValid(id))) {
@@ -30,6 +30,7 @@ const createTask = async (req, res) => {
             tDesc,
             active , 
             tStatus: taskStatus,
+            priority,
             tAssignedTo: assignedUsers.map(user => user.fullName),
            
         });
