@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema({
   costCenter:{type: "string"},
   physicalChallenged:{type: "string"},
   nationality:{type: "string"},
-  graderade :{type: "string"},
+  grade :{type: "string"},
   location:{type: "string"},
   company:{type: "string"},
   shift:{type: "string"},
@@ -52,7 +52,14 @@ const userSchema = new mongoose.Schema({
   panNumber:{type: "string"},
   pfNumber:{type: "string"},
   uanNumber:{type: "string"},
-  paymentType:{type: "string"}
+  paymentType:{type: "string"},
+  bankAccountNumber:{type:"string"},
+  bankIfscCode:{type: "string"},
+  shiftTiming:[{
+    startTime:{type: "string"},
+    endTime:{type: "string"},
+  }
+  ]
 });
 
 const User = mongoose.model('User', userSchema);
