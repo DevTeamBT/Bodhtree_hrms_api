@@ -63,6 +63,19 @@ const getState = async (req, res) => {
       }
     };
     
+const getCountries = async(req,res) => {
+  try {
+    const country = await Country.find();
+        if (!country) {
+          return res.status(404).json({ error: 'Country not found' });
+        }
+        res.json(country); 
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch all the countries' });
+  }
+}
+  
 
 
 
@@ -72,5 +85,6 @@ module.exports = {
     createCountry:createCountry,
     getCountry:getCountry,
     getState:getState,
+    getCountries:getCountries,
 
 }
