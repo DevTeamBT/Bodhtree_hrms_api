@@ -6,6 +6,8 @@ const projectRoutes = require('./router/routerProject/projectRouter');
 const taskRouter = require('./router/routerProject/pTaskRouter');
 const comment = require('./router/routerProject/tCommentRouter');
 const password = require('./router/routerLogin/passwordRoute');
+const country = require('./router/routerCountry/countryRouter');
+const Client = require('./router/routerClient/clientRouter');
 // const cors = require('cors');
 const auth = require('./router/authRouter/authRouter');
 
@@ -39,7 +41,9 @@ app.use(projectRoutes);
 app.use(taskRouter);
 app.use(comment);
 app.use(auth);
-app.use(password)
+app.use(password);
+app.use(country);
+app.use(Client);
 
 
 app.listen(PORT, () => {
