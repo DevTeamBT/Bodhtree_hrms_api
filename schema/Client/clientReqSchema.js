@@ -1,13 +1,14 @@
 const mongoose = require('mongoose');
 
 const clientSchema = new mongoose.Schema({
+    client_Id: {type: mongoose.Schema.Types.String, ref:'Company'}, //fetch name from Company schema
     firstName: {type:"string"},
     lastName: {type:"string"},
     jobTitle: {type:"string"},
     department: {type:"string"},
-    country: {type: mongoose.Schema.Types.String, ref:'Company'},
-    state: {type: mongoose.Schema.Types.String, ref:'Company'},
-    city: {type: mongoose.Schema.Types.String, ref:'Company'},
+    country: {type: mongoose.Schema.Types.String, ref:'Company'}, //fetch name from Company schema
+    state: {type: mongoose.Schema.Types.String, ref:'Company'}, //fetch name from Company schema
+    city: {type: mongoose.Schema.Types.String, ref:'Company'}, //fetch name from Company schema
     email: {type:"string"},
     mobile: {type:"string"},
     linkedIn: {type:"string"},
