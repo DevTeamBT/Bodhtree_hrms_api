@@ -39,7 +39,12 @@ const userLogin = async (req, res) => {
     // const payload = { _id: user._id };
     const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    res.send({ message: 'Login successful', token });
+    res.send({ message: 'Login successful',token: token,
+      user: {
+          roleName: user.roleName,
+          fullName: user.fullName,
+          // other user details you need
+      }});
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
