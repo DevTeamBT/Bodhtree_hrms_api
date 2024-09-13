@@ -180,6 +180,43 @@ const updateEmp = async(req,res) => {
 
 
 
+const getEmpByManager = async(req,res) => {
+  const { managerId } = req.params;  // Get the ObjectId (manager's ID) from request parameters
+
+  try {
+    // Convert the managerId param to ObjectId using 'new' keyword
+    const managerObjectId = new mongoose.Types.ObjectId(managerId);
+
+    // Step 1: Find the fullName of the employee (manager) by their ObjectId
+    const manager = await User.findById(managerObjectId).select('fullName');
+    
+    if (!manager) {
+      return res.status(404).json({ message: 'Manager not found' });
+    }
+
+    const managerFullName = manager.fullName;
+
+    // Step 2: Find all employees who report to this fullName
+    const employees = await User.find({ reportsTo: managerFullName }).select('fullName');
+
+    // If no employees are found
+    if (employees.length === 0) {
+      return res.status(404).json({ message: `No employees found reporting to ${managerFullName}` });
+    }
+
+    // Return the list of employees' fullNames
+    res.status(200).json({
+      message: `Employees reporting to ${managerFullName}`,
+      managerName: managerFullName,
+      employees
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+}
+
+
 module.exports = {
   createUser: createUser,
   getUsers: getUsers,
@@ -188,7 +225,8 @@ module.exports = {
   getRoles:getRoles,
   createDept:createDept,
   getAllDept:getAllDept,
-  updateEmp:updateEmp
+  updateEmp:updateEmp,
+  getEmpByManager:getEmpByManager
 };
 
 

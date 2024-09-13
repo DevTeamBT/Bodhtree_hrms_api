@@ -14,6 +14,7 @@ const getRoles = userController.getRoles;
 const createDept = userController.createDept;
 const getAllDept = userController.getAllDept;
 const updateEmp = userController.updateEmp;
+const getEmpByManager = userController.getEmpByManager;
 
 
 const userLogin = loginController.userLogin;
@@ -26,7 +27,8 @@ router.post('/api/role', addRole);
 router.get('/roles', getRoles);
 router.post('/api/derpement', createDept);
 router.get('/api/dept', getAllDept);
-router.put('/user/:_id', updateEmp)
+router.put('/user/:_id', updateEmp);
+router.get('/employees/reportsTo/:managerId', getEmpByManager);
 
 
 router.post('/api/login', userLogin);
