@@ -60,12 +60,25 @@ const getUsers = async (req, res) => {
 };
 
 //get using _id
-const getUser = async (req,res) => {
+const getUser = async (req, res) => {
   try {
-    const users = await User.findOne({}, '-enterPassword');
-    res.status(200).json(users);
+    // Extract _id from request parameters
+    const userId = req.params.id;
+
+    // Fetch the user by _id, excluding the 'enterPassword' field
+    const user = await User.findById(userId, '-enterPassword');
+
+    // Check if user exists
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Return the user data
+    res.status(200).json(user);
   } catch (error) {
     console.error(error);
+
+    // Return a 500 Internal Server Error with error details
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
