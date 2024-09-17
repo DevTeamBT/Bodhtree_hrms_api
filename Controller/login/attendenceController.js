@@ -1,0 +1,125 @@
+const mongoose = require('mongoose');
+const Attendence = require('../../schema/Employee/attendenceSchema');
+const User = require('../../schema/Employee/userSchema');
+
+
+const signIn = async (req, res) => {
+  try {
+    const { userId, status } = req.body;
+
+    // Check if userId and status are provided
+    if (!userId || !status) {
+      return res.status(400).json({ error: 'User ID and status are required' });
+    }
+
+    // Validate the status value
+    const validStatuses = ['inOffice', 'inClientLocation', 'workFromHome'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: `Invalid status value. Allowed values are: ${validStatuses.join(', ')}` });
+    }
+
+    // Get the current time in ISO format
+    const currentISOTime = new Date().toISOString();
+
+    // Check if there's already an attendance record for today
+    let attendance = await Attendence.findOne({
+      userId,
+      date: {
+        $gte: new Date(new Date().setHours(0, 0, 0, 0)) // Start of the day
+      }
+    });
+
+    if (!attendance) {
+      // If no attendance record for today, create a new one
+      attendance = new Attendence({
+        userId,
+        date: currentISOTime, // Set the current date
+        signInTime: currentISOTime, // Set sign-in time to the current time
+        status
+      });
+    } else {
+      // If the user has already signed in today
+      if (attendance.signInTime) {
+        return res.status(400).json({ error: 'Already signed in today' });
+      }
+      // Update sign-in time if it was not set previously
+      attendance.signInTime = currentISOTime;
+    }
+
+    // Save the attendance record
+    await attendance.save();
+
+    // Return the populated attendance record with the user's full name, excluding signOutTime
+    const populatedAttendance = await Attendence.findById(attendance._id)
+      .populate({ path: 'userId', select: 'fullName' })
+      .select('-signOutTime') // Exclude signOutTime from the response
+      .exec();
+
+    res.status(201).json(populatedAttendance);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+};
+
+
+const signOut = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Check if userId is provided
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Find the attendance record for today
+    let attendance = await Attendence.findOne({
+      userId,
+      date: {
+        $gte: new Date(new Date().setHours(0, 0, 0, 0)) // Start of the day
+      }
+    });
+
+    if (!attendance) {
+      return res.status(404).json({ error: 'No attendance record found for today' });
+    }
+
+    // Check if the user has already signed out
+    if (attendance.signOutTime) {
+      return res.status(400).json({ error: 'Already signed out today' });
+    }
+
+    // Set the current time as signOutTime
+    attendance.signOutTime = new Date();
+    await attendance.save();
+
+    // Calculate the total hours worked (signOutTime - signInTime)
+    const signInTime = new Date(attendance.signInTime);
+    const signOutTime = new Date(attendance.signOutTime);
+    const totalTimeInMs = signOutTime - signInTime;
+    const totalHoursWorked = totalTimeInMs / (1000 * 60 * 60); // Convert milliseconds to hours
+    const roundedHoursWorked = totalHoursWorked.toFixed(2); // Round to 2 decimal places
+
+    // Populate the user's full name
+    const populatedAttendance = await Attendence.findById(attendance._id)
+      .populate({ path: 'userId', select: 'fullName' })
+      .exec();
+
+    // Respond with the attendance data and total hours worked
+    res.status(200).json({
+      message: 'Sign-out successful',
+      attendance: populatedAttendance,
+      totalHoursWorked: roundedHoursWorked
+    });
+  } catch (error) {
+    console.error('Error occurred during sign-out:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+};
+
+    
+
+module.exports={
+    signIn:signIn,
+    signOut:signOut,
+}

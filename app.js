@@ -1,6 +1,7 @@
 const express = require('express');
 require('dotenv').config();
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 const userRoutes = require('./router/routerLogin/userRoute'); 
 const projectRoutes = require('./router/routerProject/projectRouter');
 const taskRouter = require('./router/routerProject/pTaskRouter');
@@ -9,6 +10,7 @@ const password = require('./router/routerLogin/passwordRoute');
 const country = require('./router/routerCountry/countryRouter');
 const Client = require('./router/routerClient/clientRouter');
 const ClientReq = require('./router/routerClient/clientReqRouter');
+const Attendance = require('./router/routerLogin/attendenceRouter');
 // const cors = require('cors');
 const auth = require('./router/authRouter/authRouter');
 
@@ -19,6 +21,7 @@ const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+app.use(bodyParser.json());
 
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
@@ -46,6 +49,7 @@ app.use(password);
 app.use(country);
 app.use(Client);
 app.use(ClientReq);
+app.use(Attendance);
 
 
 app.listen(PORT, () => {
