@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Attendence = require('../../schema/Employee/attendenceSchema');
 const User = require('../../schema/Employee/userSchema');
+const Leave = require('../../schema/Employee/leaveSchema');
 
 
 const signIn = async (req, res) => {
@@ -117,9 +118,49 @@ const signOut = async (req, res) => {
   }
 };
 
+
+const applyLeave = async(req,res) =>{
+  try {
+    const { userId, leaveType, startDate, endDate, reason } = req.body;
+
+    // Fetch user details, including fullName
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const fullName = user.fullName;
+
+    // Create the new leave application
+    const newLeave = new Leave({
+      userId,
+      leaveType,
+      startDate,
+      endDate,
+      reason,
+      status: 'pending',  // Default status if not provided
+      appliedDate: new Date()  // Optional: Add appliedDate field if needed
+    });
+
+    // Save the leave application
+    await newLeave.save();
+
+    // Return the success response with fullName
+    return res.status(201).json({
+      success: true,
+      message: 'Leave applied successfully',
+      leave: newLeave,
+      status: 'pending',  
+      fullName: fullName
+    });
+  } catch (error) {
+    console.error('Error occurred during sign-out:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+}
     
 
 module.exports={
     signIn:signIn,
     signOut:signOut,
+    applyLeave:applyLeave
 }

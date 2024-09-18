@@ -10,9 +10,11 @@ const signOut= attendenceController.signOut
 // const getAttendenceByDate = attendenceController.getAttendenceByDate;
 // const editAttendence = attendenceController.editAttendence;
 // const deleteAttendence = attendenceController.deleteAttendence;
+const applyLeave = attendenceController.applyLeave;
 
 
 router.post('/add/signIn', signIn);
 router.post('/add/signOut', signOut);
+router.post('/apply/leave', applyLeave);
 
 module.exports = router;
