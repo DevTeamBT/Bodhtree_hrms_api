@@ -38,13 +38,15 @@ const signIn = async (req, res) => {
         signInTime: currentISOTime, // Set sign-in time to the current time
         status
       });
-    } else {
+    } 
+    else {
       // If the user has already signed in today
-      if (attendance.signInTime) {
-        return res.status(400).json({ error: 'Already signed in today' });
+      if (attendance.signInTime && !attendance.signOutTime) {
+        return res.status(400).json({ error: 'Already signed in today.' });
       }
       // Update sign-in time if it was not set previously
       attendance.signInTime = currentISOTime;
+      attendance.status = status; // Update status as well
     }
 
     // Save the attendance record
@@ -73,21 +75,26 @@ const signOut = async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Find the attendance record for today
+    // Find the most recent attendance record for today
+    const todayStart = new Date().setHours(0, 0, 0, 0); // Start of the day
     let attendance = await Attendence.findOne({
       userId,
-      date: {
-        $gte: new Date(new Date().setHours(0, 0, 0, 0)) // Start of the day
-      }
-    });
+      date: { $gte: new Date(todayStart) }
+    }).sort({ signInTime: 1 }).limit(4); // Sort by latest sign-in time
 
+    // Check if attendance record exists for today
     if (!attendance) {
-      return res.status(404).json({ error: 'No attendance record found for today' });
+      return res.status(400).json({ error: 'No attendance record found for today' });
     }
 
-    // Check if the user has already signed out
+    // Check if the user has signed in
+    if (!attendance.signInTime) {
+      return res.status(400).json({ error: 'You need to sign in before signing out' });
+    }
+
+    // Check if the user has already signed out for this sign-in
     if (attendance.signOutTime) {
-      return res.status(400).json({ error: 'Already signed out today' });
+      return res.status(401).json({ error: 'Already signed out for the latest sign-in today' });
     }
 
     // Set the current time as signOutTime
@@ -95,11 +102,8 @@ const signOut = async (req, res) => {
     await attendance.save();
 
     // Calculate the total hours worked (signOutTime - signInTime)
-    const signInTime = new Date(attendance.signInTime);
-    const signOutTime = new Date(attendance.signOutTime);
-    const totalTimeInMs = signOutTime - signInTime;
+    const totalTimeInMs = attendance.signOutTime - attendance.signInTime;
     const totalHoursWorked = totalTimeInMs / (1000 * 60 * 60); // Convert milliseconds to hours
-    const roundedHoursWorked = totalHoursWorked.toFixed(2); // Round to 2 decimal places
 
     // Populate the user's full name
     const populatedAttendance = await Attendence.findById(attendance._id)
@@ -110,13 +114,14 @@ const signOut = async (req, res) => {
     res.status(200).json({
       message: 'Sign-out successful',
       attendance: populatedAttendance,
-      totalHoursWorked: roundedHoursWorked
+      totalHoursWorked
     });
   } catch (error) {
     console.error('Error occurred during sign-out:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
+
 
 
 const applyLeave = async(req,res) =>{

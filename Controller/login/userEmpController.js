@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const User = require('../../schema/Employee/userSchema'); 
 const Role = require('../../schema/Employee/roleSchema');
 const Dept = require('../../schema/Employee/departmentSchema');
+const Attendance = require('../../schema/Employee/attendenceSchema');
+const UplodeImage = require('../../schema/Employee/userPhotoSchema');
 
 
 //post api to add employee info
@@ -192,42 +194,168 @@ const updateEmp = async(req,res) => {
 };
 
 
+// Helper function to format date to IST and in en-US locale
 
-const getEmpByManager = async(req,res) => {
-  const { managerId } = req.params;  // Get the ObjectId (manager's ID) from request parameters
+const formatToIST = (date) => {
+  if (!date) return 'Not provided';
+
+  // Convert date to IST
+  const istDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+
+  // Format the time in en-US locale
+  return istDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+};
+
+const getEmpByManager = async (req, res) => {
+  const { managerId, startDate, endDate } = req.params;
 
   try {
-    // Convert the managerId param to ObjectId using 'new' keyword
-    const managerObjectId = new mongoose.Types.ObjectId(managerId);
+    // Validate managerId
+    if (!mongoose.Types.ObjectId.isValid(managerId)) {
+      return res.status(400).json({ message: 'Invalid Manager ID' });
+    }
 
-    // Step 1: Find the fullName of the employee (manager) by their ObjectId
-    const manager = await User.findById(managerObjectId).select('fullName');
-    
+    // Validate and parse dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: 'Invalid Date Range. Please use YYYY-MM-DD format.' });
+    }
+
+    // Find the manager
+    const manager = await User.findById(managerId).select('fullName');
     if (!manager) {
       return res.status(404).json({ message: 'Manager not found' });
     }
-
     const managerFullName = manager.fullName;
 
-    // Step 2: Find all employees who report to this fullName
-    const employees = await User.find({ reportsTo: managerFullName }).select('fullName');
+    // Find employees reporting to the manager
+    const employees = await User.find({ reportsTo: managerFullName })
+      .select('fullName shiftTiming location availability')
+      .lean();
 
-    // If no employees are found
     if (employees.length === 0) {
       return res.status(404).json({ message: `No employees found reporting to ${managerFullName}` });
     }
 
-    // Return the list of employees' fullNames
+    // Fetch attendance data for the specified date range
+    const attendanceRecords = await Attendance.find({
+      userId: { $in: employees.map(emp => emp._id) },
+      date: {
+        $gte: start, // Start of the range
+        $lt: end // End of the range (exclusive)
+      }
+    }).select('userId date signInTime signOutTime status').lean();
+
+    // Combine employee data with attendance data by filtering based on date
+    const employeesWithDetails = employees.map(employee => {
+      // Filter attendance records by employee and date
+      const attendanceForEmployee = attendanceRecords.filter(
+        att => att.userId.toString() === employee._id.toString()
+      );
+
+      // Prepare attendance details for each day in the date range
+      const attendanceDetails = [];
+      let currentDate = new Date(start);
+      
+      while (currentDate <= end) {
+        const attendanceRecord = attendanceForEmployee.find(
+          att => new Date(att.date).toDateString() === currentDate.toDateString()
+        );
+
+        attendanceDetails.push({
+          date: currentDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          signInTiming: attendanceRecord
+            ? attendanceRecord.signInTime
+              ? formatToIST(new Date(attendanceRecord.signInTime))
+              : 'Not provided'
+            : 'Not provided',
+          signOutTiming: attendanceRecord
+            ? attendanceRecord.signOutTime
+              ? formatToIST(new Date(attendanceRecord.signOutTime))
+              : 'Not provided'
+            : 'Not provided',
+          status: attendanceRecord ? attendanceRecord.status : 'Not recorded',
+        });
+
+        // Move to the next day
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Convert shift timings array to IST
+      const shiftTimingDetails = employee.shiftTiming && employee.shiftTiming.length
+        ? employee.shiftTiming.map(shift => ({
+            startTime:(shift.startTime),
+            endTime:(shift.endTime),
+          }))
+        : [{ startTime: 'Not provided', endTime: 'Not provided' }];
+
+      return {
+        name: employee.fullName,
+        shiftTiming: shiftTimingDetails,
+        location: employee.location || 'Not provided',
+        attendanceDetails
+      };
+    });
+
+    // Send response with combined data
     res.status(200).json({
-      message: `Employees reporting to ${managerFullName}`,
+      message: `Employee information for ${managerFullName} from ${startDate} to ${endDate}`,
       managerName: managerFullName,
-      employees
+      employees: employeesWithDetails,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    console.error('Error fetching employee information:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
-}
+};
+
+
+
+
+
+//uplode user profile photo
+const uplodePhoto = async(req,res)=>{
+  const { userId } = req.params;
+
+    try {
+        // Validate the userId
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'Invalid User ID' });
+        }
+
+        // Ensure the file was uploaded
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        // get the fullName by userId
+        const user = await User.findById(userId); 
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        const fullName = user.fullName;
+        // Store the file path in the database
+        const newPhoto = new UplodeImage({
+            userId: userId,
+            photo: req.file.path 
+        });
+
+        await newPhoto.save();
+
+        // Send a success response
+        res.status(200).json({
+          message: `${fullName}'s profile photo uploaded successfully`,
+          filePath: req.file.path
+        });
+
+    } catch (error) {
+        console.error('Error uploading profile picture:', error);
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+};
+
+
 
 
 module.exports = {
@@ -239,7 +367,8 @@ module.exports = {
   createDept:createDept,
   getAllDept:getAllDept,
   updateEmp:updateEmp,
-  getEmpByManager:getEmpByManager
+  getEmpByManager:getEmpByManager,
+  uplodePhoto:uplodePhoto,
 };
 
 

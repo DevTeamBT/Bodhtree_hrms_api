@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   reportsTo: {type:"string"},
   designation: {type:"string", required: true},
   department: {type: mongoose.Schema.Types.String, ref:'empDepartment', required: true},
+  attendance: { type: mongoose.Schema.Types.ObjectId, ref: 'Attendance' },
   bloodGroup: {type:"string"},
   dateOfJoining: {type: "string"},
   dateOfBirth: {type: "string"},
