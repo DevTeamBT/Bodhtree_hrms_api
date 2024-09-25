@@ -312,8 +312,6 @@ const getEmpByManager = async (req, res) => {
 
 
 
-
-
 //uplode user profile photo
 const uplodePhoto = async(req,res)=>{
   const { userId } = req.params;
@@ -355,7 +353,18 @@ const uplodePhoto = async(req,res)=>{
     }
 };
 
-
+const getUserProfile = async(req,res) =>{
+  try {
+    const photos = await UplodeImage.find();  
+    if (photos.length === 0) {
+      return res.status(404).json({ message: 'No photos found.' });
+    }
+    res.status(200).json(photos); 
+  } catch (error) {
+    console.error('Error retrieving profile pictures:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
+};
 
 
 module.exports = {
@@ -369,6 +378,7 @@ module.exports = {
   updateEmp:updateEmp,
   getEmpByManager:getEmpByManager,
   uplodePhoto:uplodePhoto,
+  getUserProfile:getUserProfile,
 };
 
 

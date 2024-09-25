@@ -55,6 +55,7 @@ const getAllDept = userController.getAllDept;
 const updateEmp = userController.updateEmp;
 const getEmpByManager = userController.getEmpByManager;
 const uplodePhoto = userController.uplodePhoto;
+const getUserProfile = userController.getUserProfile;
 
 
 const userLogin = loginController.userLogin;
@@ -71,6 +72,7 @@ router.put('/user/:_id', updateEmp);
 router.get('/employees/reportsTo/:managerId/:startDate/:endDate', getEmpByManager);
 
 router.post('/uplode/photo/:userId', upload.single('photo'), uplodePhoto);
+router.get('/user/photos', getUserProfile);
 
 router.post('/api/login', userLogin);
 

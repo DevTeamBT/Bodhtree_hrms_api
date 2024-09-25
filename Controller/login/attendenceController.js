@@ -161,11 +161,40 @@ const applyLeave = async(req,res) =>{
     console.error('Error occurred during sign-out:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
+};
+
+const getAttendences = async(req,res) =>{
+  try {
+    // Fetch attendance records and populate related employee info
+    const attendanceRecords = await Attendence.find()
+      .populate('userId', 'fullName reportsTo')  
+      .lean();  
+
+    // Calculate working hours for each attendance record
+    attendanceRecords.forEach(record => {
+      if (record.signInTime && record.signOutTime) {
+        const signIn = new Date(record.signInTime);
+        const signOut = new Date(record.signOutTime);
+        const diff = signOut - signIn;  
+        record.workingHours = (diff / (1000 * 60 * 60)).toFixed(2); 
+      } else {
+        record.workingHours = 0; 
+      }
+    });
+
+    // Return the processed attendance records
+    res.status(200).json(attendanceRecords);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
 }
+
     
 
 module.exports={
     signIn:signIn,
     signOut:signOut,
-    applyLeave:applyLeave
+    applyLeave:applyLeave,
+    getAttendences:getAttendences,
 }

@@ -2,6 +2,7 @@ const express = require('express');
 require('dotenv').config();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const path = require('path');
 const userRoutes = require('./router/routerLogin/userRoute'); 
 const projectRoutes = require('./router/routerProject/projectRouter');
 const taskRouter = require('./router/routerProject/pTaskRouter');
@@ -22,6 +23,11 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
+
+// Set up EJS as the view engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
