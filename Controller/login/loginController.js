@@ -36,15 +36,17 @@ const userLogin = async (req, res) => {
       return res.status(400).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
     }
 
-    // const payload = { _id: user._id };
-    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { _id: user._id, roleName: user.roleName }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1h' } 
+    );
 
     res.send({ message: 'Login successful',token: token,
       user: {
           roleName: user.roleName,
           fullName: user.fullName,
           _id: user._id,
-          // other user details you need
       }});
   } catch (err) {
     console.error(err);

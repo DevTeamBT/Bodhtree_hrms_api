@@ -135,63 +135,50 @@ const getAllDept = async(req,res) => {
   }
 };
 
-const updateEmp = async(req,res) => {
-  const employeeId = req.params._id;
-  const updateData = req.body;
-  console.log(`Received update request for employee ID: ${employeeId}`);
-  
-  // Exclude fields that should not be updated
-  const fieldsToExclude = ['officeEmail', 'enterCode', 'enterPassword'];
+const updateEmp = async (req, res) => {
+  const employeeId = req.params._id;  
+  const updateData = req.body;        
 
-  fieldsToExclude.forEach(field => {
-    if (updateData.hasOwnProperty(field)) {
-      delete updateData[field];
-    }
-  });
+  // Check if the JWT contains the role information 
+  const userRole = req.user.roleName; 
+
+  // Authorization check: Only allow userRole with admin
+  if (userRole !== 'admin' && userRole !== 'admin') {
+    return res.status(403).json({ error: 'You do not have permission to update employee records.' });
+  }
+
+  console.log(`Received update request for employee ID: ${employeeId.fullName}`);
 
   try {
+    // Fetch the existing employee record
     const existingEmployee = await User.findById(employeeId);
 
+    // Check if the employee exists
     if (!existingEmployee) {
       console.log('Employee not found');
-      return res.status(404).send({ message: 'Employee not found' });
+      return res.status(404).json({ error: 'Employee not found' });
     }
 
-    // Check if roleId is in the updateData
-    if (updateData.roleId) {
-      // Validate roleId ObjectId
-      if (!mongoose.Types.ObjectId.isValid(updateData.roleId)) {
-        return res.status(400).json({ error: 'Invalid ObjectId format for roleId' });
-      }
+    // Update only the fields present in the request body (Partial update)
+    Object.keys(updateData).forEach((key) => {
+      existingEmployee[key] = updateData[key];
+    });
 
-      // Find the role by roleId
-      const role = await Role.findById(updateData.roleId);
-      if (!role) {
-        return res.status(404).json({ error: 'Role not found' });
-      }
+    // Save the updated employee record
+    const updatedEmployee = await existingEmployee.save();
 
-      // Add roleName to updateData
-      updateData.roleId =  role.roleName;
-    }
-
-    // Check if the update data is different from existing data
-    const isDataSame = Object.keys(updateData).every(key => 
-      updateData[key] === existingEmployee[key]?.toString()
-    );
-
-    if (isDataSame) {
-      console.log('No changes in the update data');
-      return res.status(200).send({ message: 'No changes were made. The data is already up to date.' });
-    }
-
-    const updatedEmployee = await User.findByIdAndUpdate(employeeId, updateData, { new: true });
-    console.log('Update data:', updateData);
-    res.status(200).send(updatedEmployee);
+    // Return the updated employee information as a response
+    res.status(200).json({
+      message: 'Employee record updated successfully',
+      updatedEmployee,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
+
+
 
 
 // Helper function to format date to IST and in en-US locale

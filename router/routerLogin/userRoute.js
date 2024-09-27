@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)); // Unique filenames
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)); 
     }
 });
 
@@ -34,9 +34,6 @@ const fileFilter = (req, file, cb) => {
 
 // Multer middleware
 const upload = multer({ storage: storage, fileFilter: fileFilter });
-
-
-
 
 
 
@@ -68,16 +65,14 @@ router.post('/api/role', addRole);
 router.get('/roles', getRoles);
 router.post('/api/derpement', createDept);
 router.get('/api/dept', getAllDept);
-router.put('/user/:_id', updateEmp);
+// router.put('/user/:_id', updateEmp);
+router.patch('/employee/:_id',authMiddleware, updateEmp);
 router.get('/employees/reportsTo/:managerId/:startDate/:endDate', getEmpByManager);
 
 router.post('/uplode/photo/:userId', upload.single('photo'), uplodePhoto);
 router.get('/user/photos', getUserProfile);
 
 router.post('/api/login', userLogin);
-
-
-
 
 
 

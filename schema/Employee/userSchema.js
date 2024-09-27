@@ -1,3 +1,4 @@
+const { boolean } = require('joi');
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -60,7 +61,8 @@ const userSchema = new mongoose.Schema({
     startTime:{type: "string"},
     endTime:{type: "string"},
   }
-  ]
+  ],
+  active:{type: Boolean}
 });
 
 const User = mongoose.model('User', userSchema);
