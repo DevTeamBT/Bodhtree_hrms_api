@@ -10,6 +10,13 @@ const UplodeImage = require('../../schema/Employee/userPhotoSchema');
 
 //post api to add employee info
 const createUser = async (req, res) => {
+  // Check if the JWT contains the role information 
+  const userRole = req.user.roleName; 
+
+  // Authorization check: Only allow userRole with admin
+  if (userRole !== 'admin' && userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only HR have permission to add employee records.' });
+  }
   try {
     // Check the user with employeeNumber or officeEmail already exists
     const existingUser = await User.findOne({
@@ -171,7 +178,7 @@ const updateEmp = async (req, res) => {
 
   // Authorization check: Only allow userRole with admin
   if (userRole !== 'admin' && userRole !== 'admin') {
-    return res.status(403).json({ error: 'You do not have permission to update employee records.' });
+    return res.status(403).json({ error: 'Only HR have permission to update employee records.' });
   }
 
   console.log(`Received update request for employee ID: ${employeeId.fullName}`);
@@ -204,7 +211,6 @@ const updateEmp = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
-
 
 
 // Helper function to format date to IST and in en-US locale

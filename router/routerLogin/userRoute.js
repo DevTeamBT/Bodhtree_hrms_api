@@ -58,7 +58,7 @@ const getUserProfile = userController.getUserProfile;
 const userLogin = loginController.userLogin;
 
 // router.post('/api/users', authMiddleware,createUser);
-router.post('/api/users',createUser);
+router.post('/api/users', authMiddleware,createUser);
 router.get('/users', getUsers);
 router.get('/api/users/:id', getUser);
 router.post('/api/role', addRole);
