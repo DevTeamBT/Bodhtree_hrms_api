@@ -11,43 +11,70 @@ const UplodeImage = require('../../schema/Employee/userPhotoSchema');
 //post api to add employee info
 const createUser = async (req, res) => {
   try {
-    // Check if the user with enterCode or officeEmail already exists
-  const existingUser = await User.findOne({
-    $or: [{ enterCode: req.body.enterCode }, { officeEmail: req.body.officeEmail }],
-  });
-  if (existingUser) {
-    return res.status(400).json({ error: 'User already exists', details: 'Enter code or office email is already in use.' });
-  }
-  // Validate office email domain
-  if (req.body.officeEmail && !req.body.officeEmail.endsWith('@bodhtree.com')) {
-    return res.status(400).json({ error: 'Invalid office email', details: 'Office email must end with @bodhtree.com.' });
-  }
-  // Validate roleId ObjectId
-  // if (!mongoose.Types.ObjectId.isValid(req.body.roleId)) {
-  //   return res.status(400).json({ error: 'Invalid ObjectId format for roleId' });
-  // }
-  // Find the role by roleId
-  // const role = await Role.findById(req.body.roleId);
-  // if (!role) {
-  //   return res.status(404).json({ error: 'Role not found' });
-  // }
-  //   // const salt = await bcrypt.genSalt(10);
-    // const hashedPassword = await bcrypt.hash(req.body.enterPassword, salt);
-  // Create new user with roleName
-  const newUser = new User({
-    ...req.body,
-    // enterPassword: hashedPassword,
-    // roleId: role.roleName ,
-    roleName: req.body.roleName ? req.body.roleName.toLowerCase().replace(/[^a-z]/g, '') : undefined,
-    department: req.body.department ? req.body.department.toLowerCase().replace(/[^a-z]/g, '') : undefined,
-  });
-  const savedUser = await newUser.save();
-  // Respond with saved user
-  return res.status(200).json(savedUser);
+    // Check the user with employeeNumber or officeEmail already exists
+    const existingUser = await User.findOne({
+      $or: [{ employeeNumber: req.body.employeeNumber }, { officeEmail: req.body.officeEmail }],
+    });
+    if (existingUser) {
+      // Check which field is causing the conflict
+      if (existingUser.employeeNumber === req.body.employeeNumber) {
+        return res.status(404).json({
+          error: 'Conflict: Enter code already in use',
+          details: 'The enter code is already associated with an existing user.',
+        });
+      } else if (existingUser.officeEmail === req.body.officeEmail) {
+        return res.status(401).json({
+          error: 'Conflict: Office email already in use',
+          details: 'The office email is already associated with an existing user.',
+        });
+      }
+    }
+  
+    // Validate office email domain
+    if (req.body.officeEmail && !req.body.officeEmail.endsWith('@bodhtree.com')) {
+      return res.status(400).json({
+        error: 'Invalid office email',
+        details: 'Office email must end with @bodhtree.com.',
+      });
+    }
+  
+    // Get dateOfJoining and probationPeriod from the request
+    const dateOfJoining = new Date(req.body.dateOfJoining);
+    const probationPeriod = req.body.probationPeriod || 90; //by default 30 days
+  
+    // Calculate the confirmation date by adding probationPeriod to the dateOfJoining
+    const confirmationDate = new Date(dateOfJoining);
+    confirmationDate.setDate(dateOfJoining.getDate() + probationPeriod);
+  
+    // Sanitize roleName and department
+    const roleName = req.body.roleName
+      ? req.body.roleName.toLowerCase().replace(/[^a-z]/g, '')
+      : undefined;
+    const department = req.body.department
+      ? req.body.department.toLowerCase().replace(/[^a-z]/g, '')
+      : undefined;
+  
+    // Create new user with calculated confirmation date
+    const newUser = new User({
+      ...req.body,
+      roleName,
+      department,
+      dateOfJoining: dateOfJoining, // Save joining date as is
+      confirmationDate: confirmationDate,  // Save the calculated confirmation date
+    });
+  
+    const savedUser = await newUser.save();
+  
+    // Respond with the saved user data
+    return res.status(200).json(savedUser);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      details: error.message,
+    });
   }
+  
 };
 
 //getall user info exclude password
@@ -182,7 +209,6 @@ const updateEmp = async (req, res) => {
 
 
 // Helper function to format date to IST and in en-US locale
-
 const formatToIST = (date) => {
   if (!date) return 'Not provided';
 
@@ -296,7 +322,6 @@ const getEmpByManager = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
-
 
 
 //uplode user profile photo
