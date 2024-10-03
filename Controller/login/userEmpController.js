@@ -207,7 +207,6 @@ const updateEmp = async (req, res) => {
 
 
 
-
 // Helper function to format date to IST and in en-US locale
 const formatToIST = (date) => {
   if (!date) return 'Not provided';

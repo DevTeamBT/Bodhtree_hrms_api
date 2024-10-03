@@ -59,7 +59,7 @@ const userLogin = loginController.userLogin;
 
 // router.post('/api/users', authMiddleware,createUser);
 router.post('/api/users',createUser);
-router.get('/api/users', getUsers);
+router.get('/users', getUsers);
 router.get('/api/users/:id', getUser);
 router.post('/api/role', addRole);
 router.get('/roles', getRoles);
