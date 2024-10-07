@@ -21,7 +21,7 @@ const pdfController = require('../../Controller/login/uplodePdfController');
  router.post('/upload', upload.single('pdfFile'), authMiddleware, pdfController.uploadFile);
  
  // Route to get all uploaded files (GET /api/files)
- router.get('/file', pdfController.getFiles);
+ router.get('/files', pdfController.getFiles);
  
  module.exports = router;
  
