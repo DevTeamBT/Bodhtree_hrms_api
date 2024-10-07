@@ -63,6 +63,7 @@ const userSchema = new mongoose.Schema({
   uanNumber:{type: "string"},
   paymentType:{type: "string"},
   bankAccountNumber:{type:"string"},
+  bankName:{type:"string"},
   bankIfscCode:{type: "string"},
   shiftTiming:[{
     startTime:{type: "string"},
@@ -72,6 +73,10 @@ const userSchema = new mongoose.Schema({
   active:{type: Boolean, required: true},
   reasonToResign:{type: String},
 });
+
+//after filling employee details it should be frizzed by site and should be accessed to edit by HR
+
+
 
 const User = mongoose.model('User', userSchema);
 
