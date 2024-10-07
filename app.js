@@ -12,6 +12,7 @@ const country = require('./router/routerCountry/countryRouter');
 const Client = require('./router/routerClient/clientRouter');
 const ClientReq = require('./router/routerClient/clientReqRouter');
 const Attendance = require('./router/routerLogin/attendenceRouter');
+const uplodePdf = require('./router/routerLogin/uplodePdf');
 // const cors = require('cors');
 const auth = require('./router/authRouter/authRouter');
 
@@ -56,6 +57,7 @@ app.use(country);
 app.use(Client);
 app.use(ClientReq);
 app.use(Attendance);
+app.use(uplodePdf);
 
 
 app.listen(PORT, () => {
