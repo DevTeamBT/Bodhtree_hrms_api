@@ -17,11 +17,14 @@ const pdfController = require('../../Controller/login/uplodePdfController');
  
  const upload = multer({ storage: storage });
  
- // Route to upload a file (POST /api/files/upload)
+ // Route to upload a file 
  router.post('/upload', upload.single('pdfFile'), authMiddleware, pdfController.uploadFile);
  
- // Route to get all uploaded files (GET /api/files)
+ // Route to get all uploaded files
  router.get('/files', pdfController.getFiles);
+
+ //Route to downlode files
+ router.get('/download/:id', pdfController.downloadPdfById);
  
  module.exports = router;
  

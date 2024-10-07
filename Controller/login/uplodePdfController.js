@@ -37,12 +37,43 @@ const getFiles = async (req, res) => {
     }
 };
 
+const downloadPdfById = async (req,res) => {
+    const { id } = req.params; // Extract the ID from the request parameters
 
+    try {
+        // Find the PDF document by its _id
+        const pdfFile = await Pdf.findById(id);
 
+        if (!pdfFile) {
+            return res.status(404).json({ message: 'File not found' });
+        }
+
+        
+        const filePath = path.join(__dirname, '../../', pdfFile.filePath); 
+        console.log('File path:', filePath); 
+
+        // Check if the file exists
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ message: 'File not found on server' });
+        }
+
+        // Send the file for download
+        res.download(filePath, pdfFile.originalName, (err) => {
+            if (err) {
+                return res.status(500).json({ message: 'Error downloading file', error: err });
+            }
+        });
+
+    } catch (error) {
+        console.error('Error downloading file:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
 
 
 // Export the functions
 module.exports = {
     uploadFile,
-    getFiles
+    getFiles,
+    downloadPdfById
 };
