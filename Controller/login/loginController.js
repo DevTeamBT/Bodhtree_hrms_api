@@ -26,6 +26,13 @@ const Login = require('../../schema/Employee/userSchema');
 const userLogin = async (req, res) => {
   const { officeEmail, enterPassword } = req.body;
 
+  // Validate that both officeEmail and enterPassword are provided
+  if (!officeEmail) {
+    return res.status(400).json({ error: 'Email is required' });
+  } if (!enterPassword){
+    return res.status(401).json({ error: 'Password is required' });
+  };
+
   try {
     const user = await Login.findOne({ officeEmail });
     if (!user) {
@@ -33,7 +40,7 @@ const userLogin = async (req, res) => {
     }
     // console.log(`Comparing passwords: ${enterPassword} with ${user.enterPassword}`);
     if (enterPassword !== user.enterPassword) {
-      return res.status(400).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
+      return res.status(401).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
     }
 
     const token = jwt.sign(

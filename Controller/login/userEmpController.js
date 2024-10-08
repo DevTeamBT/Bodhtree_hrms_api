@@ -1,6 +1,7 @@
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const path = require('path');
 const User = require('../../schema/Employee/userSchema'); 
 const Role = require('../../schema/Employee/roleSchema');
 const Dept = require('../../schema/Employee/departmentSchema');
@@ -384,6 +385,42 @@ const getUserProfile = async(req,res) =>{
 };
 
 
+const getSinglePhoto = async (req, res) => {
+  const { photId } = req.params;
+
+  try {
+    // Check if photId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(photId)) {
+      return res.status(400).json({ message: 'Invalid photo ID format.' });
+    }
+
+    // Find the photo by its _id
+    const photo = await UplodeImage.findOne({ _id: photId });
+
+    if (!photo) {
+      return res.status(404).json({ message: 'No photo found.' });
+    }
+
+    // Get the file path of the image
+    const filePath = photo.photo;
+
+    // Check if filePath is valid
+    if (!filePath) {
+      return res.status(400).json({ message: 'File path not found for this photo.' });
+    }
+
+    // Construct the absolute path to the image
+    const absolutePath = path.join(__dirname, '../../uploads', path.basename(filePath));
+
+    // Send the image file as a response
+    res.sendFile(absolutePath);
+  } catch (error) {
+    console.error('Error retrieving profile picture:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
+};
+
+
 module.exports = {
   createUser: createUser,
   getUsers: getUsers,
@@ -396,6 +433,7 @@ module.exports = {
   getEmpByManager:getEmpByManager,
   uplodePhoto:uplodePhoto,
   getUserProfile:getUserProfile,
+  getSinglePhoto:getSinglePhoto
 };
 
 

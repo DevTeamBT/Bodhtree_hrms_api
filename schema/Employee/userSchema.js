@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema({
     maternityLeave: { type: Number, default: 0 },
     paternityLeave: { type: Number, default: 0 }
   },
-  photo: {type: "string"},
+  photo: {type: mongoose.Schema.Types.String, ref:'userPhoto'},
   probationPeriod: {type: Number, default: 90},
   confirmationDate: {type: "string"},
   aadharNumber : {type: "string"},
