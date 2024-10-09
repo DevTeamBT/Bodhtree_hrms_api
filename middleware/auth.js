@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 
 const authMiddleware = (req, res, next) => {
-  // Get the token from the authorization header
-  const token = req.header('Authorization')?.replace('Bearer ', '');
+  // Get the token from the HttpOnly cookie
+  const token = req.cookies.authToken;
 
   if (!token) {
     return res.status(401).json({ error: 'No token provided, authorization denied.' });
@@ -14,9 +14,9 @@ const authMiddleware = (req, res, next) => {
 
     // Attach the decoded user (including the role) to the request object
     req.user = decoded;
-    next();
+    next(); // next middleware or route handler
   } catch (err) {
-    res.status(400).send('Invalid token.');
+    return res.status(400).json({ error: 'Invalid token.' });
   }
 };
 

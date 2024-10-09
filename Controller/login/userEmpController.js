@@ -342,7 +342,7 @@ const uplodePhoto = async(req,res)=>{
 
         // Ensure the file was uploaded
         if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
+            return res.status(401).json({ message: 'No file uploaded' });
         }
 
         // get the fullName by userId

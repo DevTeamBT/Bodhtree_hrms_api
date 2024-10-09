@@ -3,6 +3,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 const userRoutes = require('./router/routerLogin/userRoute'); 
 const projectRoutes = require('./router/routerProject/projectRouter');
 const taskRouter = require('./router/routerProject/pTaskRouter');
@@ -24,6 +25,8 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
+// Use cookie-parser middleware
+app.use(cookieParser());
 
 // Set up EJS as the view engine
 app.set('view engine', 'ejs');

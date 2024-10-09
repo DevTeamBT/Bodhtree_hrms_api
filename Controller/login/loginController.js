@@ -49,6 +49,14 @@ const userLogin = async (req, res) => {
       { expiresIn: '1h' } 
     );
 
+    // Set the token in an Http cookie only
+    res.cookie('authToken', token, {
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production', 
+      sameSite: 'Strict', 
+      maxAge: 3600000, 
+    });
+    
     res.send({ message: 'Login successful',token: token,
       user: {
           roleName: user.roleName,
