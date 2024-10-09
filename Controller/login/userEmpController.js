@@ -11,11 +11,13 @@ const UplodeImage = require('../../schema/Employee/userPhotoSchema');
 
 //post api to add employee info
 const createUser = async (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin); // Set the origin dynamically
+  res.header('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
   // Check if the JWT contains the role information 
   const userRole = req.user.roleName; 
 
   // Authorization check: Only allow userRole with admin
-  if (userRole !== 'admin' && userRole !== 'admin') {
+  if (userRole !== 'admin') {
     return res.status(403).json({ error: 'Only HR have permission to add employee records.' });
   }
   try {

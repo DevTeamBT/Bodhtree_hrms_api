@@ -49,31 +49,26 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-
-
-
-const allowedOrigins = ['http://127.0.0.1:5501', 'http://172.16.2.6:8000'];
-
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests without an origin (e.g., mobile apps or tools like Postman)
-    if (!origin) return callback(null, true);
-
-    // Check if the request's origin is in the list of allowed origins
+    if (!origin) return callback(null, true); // Allow requests without an origin
+    const allowedOrigins = ['http://127.0.0.1:5501', 'http://172.16.2.6:8000'];
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
+      callback(null, true); // Allow origin
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS')); // Block origin
     }
   },
-  credentials: true  // Allow credentials (cookies, etc.) to be sent
-}));;
+  credentials: true // Allow cookies and credentials
+}));
 
+// Preflight request handler for OPTIONS method
 app.use((req, res, next) => {
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');  // Set allowed methods
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');  // Set allowed headers
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Origin', req.headers.origin); // Set the origin dynamically
     return res.status(200).json({});
   }
   next();
