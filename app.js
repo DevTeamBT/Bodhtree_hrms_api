@@ -49,6 +49,26 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
+
+
+
+const allowedOrigins = ['http://127.0.0.1:5501', 'http://172.16.2.6:8000'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests without an origin, such as mobile apps or curl requests
+    if (!origin) return callback(null, true);
+
+    // Check if the origin is in the allowedOrigins array
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true); 
+    } else {
+      callback(new Error('Not allowed by CORS'));  
+    }
+  },
+  credentials: true  
+}));
+
 // Use the userRoutes for handling user-related routes
 app.use(userRoutes);
 app.use(projectRoutes);
