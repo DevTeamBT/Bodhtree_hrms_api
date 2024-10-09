@@ -56,18 +56,29 @@ const allowedOrigins = ['http://127.0.0.1:5501', 'http://172.16.2.6:8000'];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests without an origin, such as mobile apps or curl requests
+    // Allow requests without an origin (e.g., mobile apps or tools like Postman)
     if (!origin) return callback(null, true);
 
-    // Check if the origin is in the allowedOrigins array
+    // Check if the request's origin is in the list of allowed origins
     if (allowedOrigins.includes(origin)) {
-      callback(null, true); 
+      callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));  
+      callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true  
-}));
+  credentials: true  // Allow credentials (cookies, etc.) to be sent
+}));;
+
+app.use((req, res, next) => {
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');  // Set allowed methods
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');  // Set allowed headers
+    return res.status(200).json({});
+  }
+  next();
+});
+
 
 // Use the userRoutes for handling user-related routes
 app.use(userRoutes);
