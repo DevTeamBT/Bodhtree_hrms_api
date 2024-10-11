@@ -52,7 +52,7 @@ db.once('open', () => {
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true); // Allow requests without an origin
-    const allowedOrigins = ['http://127.0.0.1:5501', 'http://172.16.2.6:8000'];
+    const allowedOrigins = ['http://127.0.0.1:5503', 'http://172.16.2.6:8000'];
     if (allowedOrigins.includes(origin)) {
       callback(null, true); // Allow origin
     } else {
