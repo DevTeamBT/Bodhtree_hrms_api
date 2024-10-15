@@ -11,8 +11,8 @@ const UplodeImage = require('../../schema/Employee/userPhotoSchema');
 
 //post api to add employee info
 const createUser = async (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin); // Set the origin dynamically
-  res.header('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
+  // res.header('Access-Control-Allow-Origin', req.headers.origin); // Set the origin dynamically
+  // res.header('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
   // Check if the JWT contains the role information 
   const userRole = req.user.roleName; 
 
@@ -48,6 +48,19 @@ const createUser = async (req, res) => {
       });
     }
   
+     // Validate and hash the password before saving
+    //  const password = req.body.password;
+    //  if (!password || password.length < 8) {
+    //    return res.status(400).json({
+    //      error: 'Invalid password',
+    //      details: 'Password must be at least 8 characters long.',
+    //    });
+    //  }
+     
+     // Hash the password using bcrypt
+    //  const hashedPassword = await bcrypt.hash(password, 10); // num is the salt rounds
+
+
     // Get dateOfJoining and probationPeriod from the request
     const dateOfJoining = new Date(req.body.dateOfJoining);
     const probationPeriod = req.body.probationPeriod || 90; //by default 30 days
@@ -67,6 +80,7 @@ const createUser = async (req, res) => {
     // Create new user with calculated confirmation date
     const newUser = new User({
       ...req.body,
+      password: hashedPassword, //save the hashed password
       roleName,
       department,
       dateOfJoining: dateOfJoining, // Save joining date as is
@@ -84,10 +98,9 @@ const createUser = async (req, res) => {
       details: error.message,
     });
   }
-  
 };
 
-//getall user info exclude password
+// getall user info exclude password
 const getUsers = async (req, res) => {
   try {
     const users = await User.find({}, '-enterPassword');
@@ -98,14 +111,76 @@ const getUsers = async (req, res) => {
   }
 };
 
+// const getUsers = async (req, res) => {
+//   try {
+//     // Fetch users from the database, excluding the 'enterPassword' field and populating the 'photo' reference
+//     const users = await User.find({}, '-enterPassword').populate('photo');
+
+//     // Process each user to construct the response data
+//     const usersWithPhotos = await Promise.all(
+//       users.map(async (user) => {
+//         let photoPath = 'uploads/photo-default.png'; // Default path for photos
+
+//         console.log(`User ID: ${user._id}, Photo Reference: ${user.photo}`);
+
+//         // If the user has a photo reference
+//         if (user.photo) {
+//           const photo = await UplodeImage.findById(user.photo);
+//           console.log(`Photo Found: ${JSON.stringify(photo)}`);
+
+//           // If a photo is found, construct the photo path
+//           if (photo && photo.photo) {
+//             const filePath = photo.photo;
+//             const absolutePath = path.join(__dirname, '../../uploads', filePath);
+
+//             // Check if the photo file exists on the server
+//             if (fs.existsSync(absolutePath)) {
+//               // Construct the correct photo path with forward slashes for the URL
+//               photoPath = filePath.replace(/\\/g, '/'); // Ensure correct format for web URLs
+//             } else {
+//               console.warn(`Photo file not found at path: ${absolutePath}`);
+//             }
+//           } else {
+//             console.warn(`Photo not found for user: ${user._id}`);
+//           }
+//         } else {
+//           console.warn(`User ${user._id} does not have a photo reference.`);
+//         }
+
+//         // Return the user data with the photoPath
+//         return {
+//           employeeNumber: user.employeeNumber,
+//           fullName: user.fullName,
+//           photoPath, // The final resolved photo path
+//         };
+//       })
+//     );
+
+//     // Return the constructed user data with their photo paths
+//     res.status(200).json(usersWithPhotos);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Internal Server Error', details: error.message });
+//   }
+// };
+
+
+
+
+
+
+
+
 //get using _id
+
+
 const getUser = async (req, res) => {
   try {
     // Extract _id from request parameters
     const userId = req.params.id;
 
     // Fetch the user by _id, excluding the 'enterPassword' field
-    const user = await User.findById(userId, '-enterPassword');
+    const user = await User.findById(userId);
 
     // Check if user exists
     if (!user) {
@@ -385,7 +460,6 @@ const getUserProfile = async(req,res) =>{
     res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
-
 
 const getSinglePhoto = async (req, res) => {
   const { photId } = req.params;
