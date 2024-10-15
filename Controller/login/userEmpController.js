@@ -58,7 +58,7 @@ const createUser = async (req, res) => {
     //  }
      
      // Hash the password using bcrypt
-    //  const hashedPassword = await bcrypt.hash(password, 10); // num is the salt rounds
+      // const hashedPassword = await bcrypt.hash(password, 10); // num is the salt rounds
 
 
     // Get dateOfJoining and probationPeriod from the request
@@ -80,7 +80,7 @@ const createUser = async (req, res) => {
     // Create new user with calculated confirmation date
     const newUser = new User({
       ...req.body,
-      password: hashedPassword, //save the hashed password
+      // password: hashedPassword, //save the hashed password
       roleName,
       department,
       dateOfJoining: dateOfJoining, // Save joining date as is
