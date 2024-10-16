@@ -49,30 +49,43 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Allow requests without an origin
+    // Allow requests with no origin, e.g., mobile apps or curl requests
+    if (!origin) return callback(null, true);
+
+    // List of allowed origins
     const allowedOrigins = ['http://127.0.0.1:5504', 'http://172.16.2.6:8000'];
+
+    // Check if the request's origin is in the allowed list
     if (allowedOrigins.includes(origin)) {
       callback(null, true); // Allow origin
     } else {
       callback(new Error('Not allowed by CORS')); // Block origin
     }
   },
-  credentials: true // Allow cookies and credentials
-}));
+  credentials: true, // Allow cookies and credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Allowed HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+};
+
+// Use the CORS middleware
+app.use(cors(corsOptions));
 
 // Preflight request handler for OPTIONS method
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Origin', req.headers.origin); // Set the origin dynamically
-    return res.status(200).json({});
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin); // Dynamically set the allowed origin
   }
-  next();
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200); // Send a 200 status code to indicate success
 });
+
+
 
 
 // Use the userRoutes for handling user-related routes
