@@ -38,10 +38,17 @@ const userLogin = async (req, res) => {
     if (!user) {
       return res.status(400).send('Please enter a valid office email');
     }
-    // console.log(`Comparing passwords: ${enterPassword} with ${user.enterPassword}`);
+    
     if (enterPassword !== user.enterPassword) {
       return res.status(401).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
     }
+
+    // Use bcrypt to compare the provided password with the hashed password
+    // const isPasswordValid = await bcrypt.compare(enterPassword, user.enterPassword);
+
+    // if (!isPasswordValid) {
+    //   return res.status(401).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
+    // }
 
     const token = jwt.sign(
       { _id: user._id, roleName: user.roleName }, 
@@ -52,7 +59,7 @@ const userLogin = async (req, res) => {
     // Set the token in an Http cookie only
     res.cookie('authToken', token, {
       httpOnly: true, 
-      secure: process.env.NODE_ENV === 'production', 
+      secure: true, 
       sameSite: 'Strict', 
       maxAge: 3600000, 
     });
@@ -75,5 +82,4 @@ const userLogin = async (req, res) => {
 
 module.exports = {
     userLogin: userLogin,
-
   };
