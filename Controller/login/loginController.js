@@ -59,7 +59,7 @@ const userLogin = async (req, res) => {
     // Set the token in an Http cookie only
     res.cookie('authToken', token, {
       httpOnly: true, 
-      secure: true, 
+      secure: false, 
       sameSite: 'Strict', 
       maxAge: 3600000, 
     });
