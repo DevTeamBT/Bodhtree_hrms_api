@@ -55,7 +55,7 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     // List of allowed origins
-    const allowedOrigins = ['http://127.0.0.1:5504', 'http://172.16.2.6:8000'];
+    const allowedOrigins = ['http://127.0.0.1:5504', 'http://172.16.2.6:8000', 'http://172.16.2.4:8000', 'http://127.0.0.1:5500'];
 
     // Check if the request's origin is in the allowed list
     if (allowedOrigins.includes(origin)) {
@@ -66,7 +66,7 @@ const corsOptions = {
   },
   credentials: true, // Allow cookies and credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Allowed HTTP methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+  allowedHeaders: ['Content-Type', 'Authorization', 'credentials'], // Allowed headers
 };
 
 // Use the CORS middleware
@@ -80,7 +80,7 @@ app.options('*', (req, res) => {
   }
   
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization', 'credentials');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200); // Send a 200 status code to indicate success
 });
