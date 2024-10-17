@@ -34,10 +34,12 @@ const userLogin = async (req, res) => {
   };
 
   try {
-    const user = await Login.findOne({ officeEmail });
-    if (!user) {
-      return res.status(400).send('Please enter a valid office email');
-    }
+    // Search for the user with a case-insensitive email match
+  const user = await Login.findOne({ officeEmail: { $regex: new RegExp(`^${officeEmail}$`, 'i') } });
+  
+  if (!user) {
+    return res.status(400).json({ error: 'Please enter a valid office email' });
+  }
     
     if (enterPassword !== user.enterPassword) {
       return res.status(401).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
