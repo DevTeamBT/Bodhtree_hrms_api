@@ -55,7 +55,7 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     // List of allowed origins
-    const allowedOrigins = ['http://127.0.0.1:5504', 'http://172.16.2.6:8000', 'http://172.16.2.4:8000', 'http://127.0.0.1:5500'];
+    const allowedOrigins = ['http://127.0.0.1:5504', 'http://172.16.2.6:8000', 'http://172.16.2.4:8000', 'http://127.0.0.1:5500', 'http://172.16.2.4/'];
 
     // Check if the request's origin is in the allowed list
     if (allowedOrigins.includes(origin)) {
