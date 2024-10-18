@@ -14,10 +14,17 @@ const authMiddleware = (req, res, next) => {
 
     // Attach the decoded user (including the role) to the request object
     req.user = decoded;
-    next(); // next middleware or route handler
+    next(); // Proceed to the next middleware or route handler
   } catch (err) {
+    // Check if the error is related to token expiration
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired. Please login again.' });
+    }
+    
+    // Handle other errors (e.g., invalid token)
     return res.status(400).json({ error: 'Invalid token.' });
   }
 };
+
 
 module.exports = authMiddleware;
