@@ -52,7 +52,7 @@ db.once('open', () => {
 const corsOptions = {
   origin: '*', // Allow all origins
   credentials: true, // Allow cookies and credentials
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Allowed HTTP methods
+  methods: ['*'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
 };
 
@@ -62,7 +62,7 @@ app.use(cors(corsOptions));
 // Preflight request handler for OPTIONS method
 app.options('*', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*'); // Allow all origins
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
+  res.header('Access-Control-Allow-Methods', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200); // Send a 200 status code to indicate success
