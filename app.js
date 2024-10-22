@@ -94,6 +94,20 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'credentials'], // Allowed headers
 };
 
+// Preflight request handler for OPTIONS method
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin); // Dynamically set the allowed origin
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization', 'credentials');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200); // Send a 200 status code to indicate success
+});
+
+
 // Use the CORS middleware
 app.use(cors(corsOptions));
 
