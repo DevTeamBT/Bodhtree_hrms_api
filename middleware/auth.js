@@ -2,10 +2,24 @@ const jwt = require('jsonwebtoken');
 
 const authMiddleware = (req, res, next) => {
   // Get the token from the HttpOnly cookie
-  const token = req.cookies.authToken;
+  // // const token = req.cookies.authToken;
+  // // if (!token) {
+  // //   return res.status(401).json({ error: 'No token provided, authorization denied.' });
+  // // }
+  // const token = req.headers['authorization']?.split(' ')[1]; // Extract the token
+  // if (!token) return res.status(401).json({ message: 'No token provided, authorization denied.' });
+
+  // Option 1: Using Cookies
+  const cookieToken = req.cookies.authToken;
+
+  // Option 2: Using Bearer Token
+  const bearerToken = req.headers['authorization']?.split(' ')[1];
+
+  // Check for token in cookies first, then check the Bearer token
+  const token = cookieToken || bearerToken;
 
   if (!token) {
-    return res.status(401).json({ error: 'No token provided, authorization denied.' });
+    return res.status(401).json({ message: 'No token provided, authorization denied.' });
   }
 
   try {

@@ -49,29 +49,56 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-const corsOptions = {
-  origin: '*', // Allow all origins
-  credentials: true, // Allow cookies and credentials
-  methods: ['*'], // Allowed HTTP methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
-};
+// const corsOptions = {
+//   origin: '*', 
+//   credentials: true, 
+//   methods: ['*'], 
+//   allowedHeaders: ['Content-Type', 'Authorization'], 
+// };
 
-// Use the CORS middleware
-app.use(cors(corsOptions));
+// // Use the CORS middleware
+// app.use(cors(corsOptions));
 
-// Preflight request handler for OPTIONS method
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*'); // Allow all origins
-  res.header('Access-Control-Allow-Methods', '*');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(200); // Send a 200 status code to indicate success
-});
+// // Preflight request handler for OPTIONS method
+// app.options('*', (req, res) => {
+//   res.header('Access-Control-Allow-Origin', '*'); // Allow all origins
+//   res.header('Access-Control-Allow-Methods', '*');
+//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+//   res.header('Access-Control-Allow-Credentials', 'true');
+//   res.sendStatus(200); // Send a 200 status code to indicate success
+// });
 
 
 
 
 // Use the userRoutes for handling user-related routes
+
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin, e.g., mobile apps or curl requests
+    if (!origin) return callback(null, true);
+
+    // List of allowed origins
+    const allowedOrigins = ['http://127.0.0.1:5504', 'http://172.16.2.6:8000', 'http://172.16.2.4:8000', 'http://127.0.0.1:5500', 'http://localhost:3000', 'http://127.0.0.1:5505'];
+
+    // Check if the request's origin is in the allowed list
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true); // Allow origin
+    } else {
+      callback(new Error('Not allowed by CORS')); // Block origin
+    }
+  },
+  credentials: true, // Allow cookies and credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // Allowed HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization', 'credentials'], // Allowed headers
+};
+
+// Use the CORS middleware
+app.use(cors(corsOptions));
+
+
+
 app.use(userRoutes);
 app.use(projectRoutes);
 app.use(taskRouter);
