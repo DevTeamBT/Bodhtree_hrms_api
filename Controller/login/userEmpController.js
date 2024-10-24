@@ -11,8 +11,6 @@ const UplodeImage = require('../../schema/Employee/userPhotoSchema');
 
 //post api to add employee info
 const createUser = async (req, res) => {
-  // res.header('Access-Control-Allow-Origin', req.headers.origin); // Set the origin dynamically
-  // res.header('Access-Control-Allow-Credentials', 'true'); // Allow credentials (cookies, etc.)
   // Check if the JWT contains the role information 
   const userRole = req.user.roleName; 
 
@@ -100,80 +98,34 @@ const createUser = async (req, res) => {
   }
 };
 
-// getall user info exclude password
+// getall user info exclude password and sort limit 10
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find({}, '-enterPassword');
-    res.status(200).json(users);
+    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+    const limit = 10; // Limit to 10 users per page
+    const skip = (page - 1) * limit; // Calculate the number of users to skip
+  
+    const users = await User.find({}, '-enterPassword')
+      .sort({ employeeNumber: 1 })
+      .skip(skip)  // Skip users based on the current page
+      .limit(limit);  // Limit to 10 users
+  
+    const totalUsers = await User.countDocuments(); // Get total count of users
+    const totalPages = Math.ceil(totalUsers / limit); // Calculate total number of pages
+  
+    res.status(200).json({
+      users,
+      currentPage: page,
+      totalPages,
+      totalUsers
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
 
-// const getUsers = async (req, res) => {
-//   try {
-//     // Fetch users from the database, excluding the 'enterPassword' field and populating the 'photo' reference
-//     const users = await User.find({}, '-enterPassword').populate('photo');
-
-//     // Process each user to construct the response data
-//     const usersWithPhotos = await Promise.all(
-//       users.map(async (user) => {
-//         let photoPath = 'uploads/photo-default.png'; // Default path for photos
-
-//         console.log(`User ID: ${user._id}, Photo Reference: ${user.photo}`);
-
-//         // If the user has a photo reference
-//         if (user.photo) {
-//           const photo = await UplodeImage.findById(user.photo);
-//           console.log(`Photo Found: ${JSON.stringify(photo)}`);
-
-//           // If a photo is found, construct the photo path
-//           if (photo && photo.photo) {
-//             const filePath = photo.photo;
-//             const absolutePath = path.join(__dirname, '../../uploads', filePath);
-
-//             // Check if the photo file exists on the server
-//             if (fs.existsSync(absolutePath)) {
-//               // Construct the correct photo path with forward slashes for the URL
-//               photoPath = filePath.replace(/\\/g, '/'); // Ensure correct format for web URLs
-//             } else {
-//               console.warn(`Photo file not found at path: ${absolutePath}`);
-//             }
-//           } else {
-//             console.warn(`Photo not found for user: ${user._id}`);
-//           }
-//         } else {
-//           console.warn(`User ${user._id} does not have a photo reference.`);
-//         }
-
-//         // Return the user data with the photoPath
-//         return {
-//           employeeNumber: user.employeeNumber,
-//           fullName: user.fullName,
-//           photoPath, // The final resolved photo path
-//         };
-//       })
-//     );
-
-//     // Return the constructed user data with their photo paths
-//     res.status(200).json(usersWithPhotos);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Internal Server Error', details: error.message });
-//   }
-// };
-
-
-
-
-
-
-
-
 //get using _id
-
-
 const getUser = async (req, res) => {
   try {
     // Extract _id from request parameters
