@@ -24,37 +24,18 @@ const signIn = async (req, res) => {
     // Get the current time in ISO format
     const currentISOTime = new Date().toISOString();
 
-    // Check if there's already an attendance record for today
-    let attendance = await Attendence.findOne({
+    // Create a new attendance record
+    const attendance = new Attendence({
       userId,
-      date: {
-        $gte: new Date(new Date().setHours(0, 0, 0, 0)) // Start of the day
-      }
+      date: new Date().setHours(0, 0, 0, 0), // Start of the day
+      signInTime: currentISOTime,
+      status
     });
-
-    if (!attendance) {
-      // If no attendance record for today, create a new one
-      attendance = new Attendence({
-        userId,
-        date: currentISOTime, // Set the current date
-        signInTime: currentISOTime, // Set sign-in time to the current time
-        status
-      });
-    } 
-    else {
-      // If the user has already signed in today
-      if (attendance.signInTime && !attendance.signOutTime) {
-        return res.status(400).json({ error: 'Already signed in today.' });
-      }
-      // Update sign-in time if it was not set previously
-      attendance.signInTime = currentISOTime;
-      attendance.status = status; // Update status as well
-    }
 
     // Save the attendance record
     await attendance.save();
 
-    // Return the populated attendance record with the user's full name, excluding signOutTime
+    // Return the populated attendance record with the user's full name
     const populatedAttendance = await Attendence.findById(attendance._id)
       .populate({ path: 'userId', select: 'fullName' })
       .select('-signOutTime') // Exclude signOutTime from the response
@@ -67,7 +48,6 @@ const signIn = async (req, res) => {
   }
 };
 
-
 const signOut = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -79,36 +59,37 @@ const signOut = async (req, res) => {
 
     // Find the most recent attendance record for today
     const todayStart = new Date().setHours(0, 0, 0, 0); // Start of the day
-    let attendance = await Attendence.findOne({
+    let attendance = await Attendence.find({
       userId,
-      date: { $gte: new Date(todayStart) }
-    }).sort({ signInTime: 1 }).limit(4); // Sort by latest sign-in time
+      date: { $gte: todayStart } // Fetch all attendance records for today
+    }).sort({ signInTime: -1 }); // Sort by latest sign-in time
 
-    // Check if attendance record exists for today
-    if (!attendance) {
+    // Check if any attendance records exist for today
+    if (attendance.length === 0) {
       return res.status(400).json({ error: 'No attendance record found for today' });
     }
 
-    // Check if the user has signed in
-    if (!attendance.signInTime) {
+    // Find the latest sign-in record
+    const latestSignIn = attendance.find(record => record.signOutTime === null);
+    if (!latestSignIn) {
       return res.status(400).json({ error: 'You need to sign in before signing out' });
     }
 
     // Check if the user has already signed out for this sign-in
-    if (attendance.signOutTime) {
-      return res.status(401).json({ error: 'Already signed out for the latest sign-in today' });
+    if (latestSignIn.signOutTime) {
+      return res.status(400).json({ error: 'Already signed out for the latest sign-in today' });
     }
 
     // Set the current time as signOutTime
-    attendance.signOutTime = new Date();
-    await attendance.save();
+    latestSignIn.signOutTime = new Date().toISOString();
+    await latestSignIn.save();
 
-    // Calculate the total hours worked (signOutTime - signInTime)
-    const totalTimeInMs = attendance.signOutTime - attendance.signInTime;
-    const totalHoursWorked = totalTimeInMs / (1000 * 60 * 60); // Convert milliseconds to hours
+    // Calculate total hours worked for the current sign-in
+    const totalTimeInMs = new Date(latestSignIn.signOutTime) - new Date(latestSignIn.signInTime);
+    const totalHoursWorked = Math.round(totalTimeInMs / (1000 * 60 * 60)); // Convert milliseconds to hours
 
     // Populate the user's full name
-    const populatedAttendance = await Attendence.findById(attendance._id)
+    const populatedAttendance = await Attendence.findById(latestSignIn._id)
       .populate({ path: 'userId', select: 'fullName' })
       .exec();
 
@@ -116,7 +97,7 @@ const signOut = async (req, res) => {
     res.status(200).json({
       message: 'Sign-out successful',
       attendance: populatedAttendance,
-      totalHoursWorked
+      totalHoursWorked,
     });
   } catch (error) {
     console.error('Error occurred during sign-out:', error);
@@ -200,10 +181,6 @@ const applyLeave = async (req, res) => {
 };
 
 
-
-
-
-
 const getAttendences = async(req,res) =>{
   try {
     // Fetch attendance records and populate related employee info
@@ -213,24 +190,33 @@ const getAttendences = async(req,res) =>{
 
     // Calculate working hours for each attendance record
     attendanceRecords.forEach(record => {
+      // Check if userId is populated
+      if (record.userId) {
+        // If userId exists, set fullName
+        record.fullName = record.userId.fullName;
+      } else {
+        // If userId is null, set fullName to a default value
+        record.fullName = 'User not found';
+      }
+
       if (record.signInTime && record.signOutTime) {
         const signIn = new Date(record.signInTime);
         const signOut = new Date(record.signOutTime);
         const diff = signOut - signIn;  
-        record.workingHours = (diff / (1000 * 60 * 60)).toFixed(2); 
+        // Round total hours to the nearest whole number
+        record.workingHours = Math.round(diff / (1000 * 60 * 60)); 
       } else {
         record.workingHours = 0; 
       }
     });
 
-    // Return the processed attendance records
+    // Return the processed attendance records with full name included
     res.status(200).json(attendanceRecords);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
-
 
 //adding leaves for employees
 const addLeaves = async (req, res) => {
