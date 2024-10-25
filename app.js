@@ -3,6 +3,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fileUpload = require('express-fileupload');
 const cookieParser = require('cookie-parser');
 const userRoutes = require('./router/routerLogin/userRoute'); 
 const projectRoutes = require('./router/routerProject/projectRouter');
@@ -49,31 +50,8 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-// const corsOptions = {
-//   origin: '*', 
-//   credentials: true, 
-//   methods: ['*'], 
-//   allowedHeaders: ['Content-Type', 'Authorization'], 
-// };
-
-// // Use the CORS middleware
-// app.use(cors(corsOptions));
-
-// // Preflight request handler for OPTIONS method
-// app.options('*', (req, res) => {
-//   res.header('Access-Control-Allow-Origin', '*'); // Allow all origins
-//   res.header('Access-Control-Allow-Methods', '*');
-//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-//   res.header('Access-Control-Allow-Credentials', 'true');
-//   res.sendStatus(200); // Send a 200 status code to indicate success
-// });
-
-
-
 
 // Use the userRoutes for handling user-related routes
-
-
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin, e.g., mobile apps or curl requests
@@ -110,6 +88,10 @@ app.options('*', (req, res) => {
 
 // Use the CORS middleware
 app.use(cors(corsOptions));
+
+// app.use(fileUpload({
+//   limits: { fileSize: 50 * 1024 * 1024 } // Set to 50MB or whatever size you need
+// }));
 
 
 

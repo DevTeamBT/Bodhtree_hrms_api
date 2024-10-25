@@ -2,6 +2,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const multer = require('multer');
+const xlsx = require('xlsx');
 const User = require('../../schema/Employee/userSchema'); 
 const Role = require('../../schema/Employee/roleSchema');
 const Dept = require('../../schema/Employee/departmentSchema');
@@ -207,7 +209,7 @@ const updateEmp = async (req, res) => {
   const userRole = req.user.roleName; 
 
   // Authorization check: Only allow userRole with admin
-  if (userRole !== 'admin' && userRole !== 'admin') {
+  if (userRole !== 'admin') {
     return res.status(403).json({ error: 'Only HR have permission to update employee records.' });
   }
 
@@ -449,6 +451,39 @@ const getSinglePhoto = async (req, res) => {
 };
 
 
+//uplode employees details in db by HR
+const uplodeExcel = async(req,res) => {
+  const userRole = req.user?.roleName;
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only HR have permission to upload employee records.' });
+  }
+
+  // Use the buffer directly
+  const fileBuffer = req.file.buffer;
+
+  try {
+      // Read Excel file from buffer
+      const workbook = xlsx.read(fileBuffer, { type: 'buffer' }); // Specify type as buffer
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      // Convert sheet data to JSON
+      const usersData = xlsx.utils.sheet_to_json(sheet);
+
+  // Validate each row for essential fields
+  // const validUsersData = usersData.filter(user => user.fullName && user.email && user.position);
+  // if (validUsersData.length !== usersData.length) {
+  //   return res.status(400).json({ error: 'Some records are missing required fields like fullName, email, or position.' });
+  // }
+ 
+    // Insert data directly into the database
+    await User.insertMany(usersData);
+    res.status(200).json({ message: 'User data uploaded successfully from Excel' });
+  } catch (error) {
+    console.error('Error uploading user data:', error);
+    res.status(500).json({ error: 'Error uploading data', details: error.message });
+  }
+};
+
 module.exports = {
   createUser: createUser,
   getUsers: getUsers,
@@ -461,7 +496,8 @@ module.exports = {
   getEmpByManager:getEmpByManager,
   uplodePhoto:uplodePhoto,
   getUserProfile:getUserProfile,
-  getSinglePhoto:getSinglePhoto
+  getSinglePhoto:getSinglePhoto,
+  uplodeExcel:uplodeExcel
 };
 
 

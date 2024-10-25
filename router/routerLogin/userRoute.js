@@ -35,6 +35,17 @@ const fileFilter = (req, file, cb) => {
 // Multer middleware
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 
+const storaged = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'pdfs/'); // Ensure this folder exists
+    },
+    filename: function (req, file, cb) {
+      cb(null, file.originalname); // Preserve the original file name
+    },
+  });
+  
+  const uploaded = multer({ storaged: storaged });
+
 
 
 
@@ -54,6 +65,7 @@ const getEmpByManager = userController.getEmpByManager;
 const uplodePhoto = userController.uplodePhoto;
 const getUserProfile = userController.getUserProfile;
 const getSinglePhoto = userController.getSinglePhoto;
+const uplodeExcel = userController.uplodeExcel;
 
 
 const userLogin = loginController.userLogin;
@@ -69,6 +81,7 @@ router.get('/api/dept', getAllDept);
 // router.put('/user/:_id', updateEmp);
 router.patch('/employee/:_id',authMiddleware, updateEmp);
 router.get('/employees/reportsTo/:managerId/:startDate/:endDate', getEmpByManager);
+router.post('/uplode/userExcel', authMiddleware, uploaded.single('file'), uplodeExcel);
 
 router.post('/uplode/photo/:userId', upload.single('photo'), uplodePhoto);
 router.get('/user/photos', getUserProfile);
