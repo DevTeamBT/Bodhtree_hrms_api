@@ -8,7 +8,7 @@ const attendenceController = require('../../Controller/login/attendenceControlle
 const signIn = attendenceController.signIn;
 const signOut= attendenceController.signOut
 const getAttendences = attendenceController.getAttendences;
-// const getAttendenceByDate = attendenceController.getAttendenceByDate;
+const getAttendenceByDate = attendenceController.getAttendenceByDate;
 // const editAttendence = attendenceController.editAttendence;
 // const deleteAttendence = attendenceController.deleteAttendence;
 const applyLeave = attendenceController.applyLeave;
@@ -22,5 +22,6 @@ router.post('/apply/leave', applyLeave);
 router.get('/emp/attendence', getAttendences);
 router.post('/add/leaves', authMiddleware, addLeaves);
 router.get('/allEmp/leaves', getAllLeaves);
+router.get('/attendence/:id',getAttendenceByDate);
 
 module.exports = router;

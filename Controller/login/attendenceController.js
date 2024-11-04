@@ -4,6 +4,7 @@ const cron = require('node-cron');
 const Attendence = require('../../schema/Employee/attendenceSchema');
 const User = require('../../schema/Employee/userSchema');
 const Leave = require('../../schema/Employee/leaveSchema');
+const moment = require('moment'); 
 
 
 const signIn = async (req, res) => {
@@ -320,8 +321,44 @@ const getAllLeaves = async(req,res)=>{
 };
 
 
+const getAttendenceByDate = async(req,res) => {
+  const { id } = req.params;
+    try {
+      // Fetch attendance record by ID and populate related employee info
+      const attendanceRecord = await Attendence.findById(id)
+        .populate('userId', 'fullName reportsTo')  // Populate `fullName` and `reportsTo` fields from `User`
+        .lean();
 
+      if (!attendanceRecord) {
+        return res.status(404).json({ message: 'Attendance record not found' });
+      }
 
+      // Set `fullName` and calculate `workingHours`
+      if (attendanceRecord.userId) {
+        // If `userId` exists, set `fullName`
+        attendanceRecord.fullName = attendanceRecord.userId.fullName;
+      } else {
+        // If `userId` is null, set `fullName` to a default value
+        attendanceRecord.fullName = 'User not found';
+      }
+
+      if (attendanceRecord.signInTime && attendanceRecord.signOutTime) {
+        const signIn = new Date(attendanceRecord.signInTime);
+        const signOut = new Date(attendanceRecord.signOutTime);
+        const diff = signOut - signIn;
+        // Round total hours to the nearest whole number
+        attendanceRecord.workingHours = Math.round(diff / (1000 * 60 * 60));
+      } else {
+        attendanceRecord.workingHours = 0;
+      }
+
+      // Return the processed attendance record with `fullName` and `workingHours`
+      res.status(200).json(attendanceRecord);
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    }
+  };
 
 
     
@@ -333,4 +370,5 @@ module.exports={
     getAttendences:getAttendences,
     addLeaves:addLeaves,
     getAllLeaves:getAllLeaves,
+    getAttendenceByDate,
 }
