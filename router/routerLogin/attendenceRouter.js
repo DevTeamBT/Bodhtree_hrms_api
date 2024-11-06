@@ -16,7 +16,7 @@ const addLeaves = attendenceController.addLeaves;
 const getAllLeaves = attendenceController.getAllLeaves;
 
 
-router.post('/add/signIn', signIn);
+router.post('/add/signIn', authMiddleware, signIn);
 router.post('/add/signOut', signOut);
 router.post('/apply/leave', applyLeave);
 router.get('/emp/attendence', getAttendences);

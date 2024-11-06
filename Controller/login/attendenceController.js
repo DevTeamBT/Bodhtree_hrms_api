@@ -5,41 +5,84 @@ const Attendence = require('../../schema/Employee/attendenceSchema');
 const User = require('../../schema/Employee/userSchema');
 const Leave = require('../../schema/Employee/leaveSchema');
 const moment = require('moment'); 
+const jwt = require('jsonwebtoken');
 
+// const formatToISTWithAmPm = (utcDate) => {
+//   const istDate = new Date(utcDate);
+//   istDate.setHours(istDate.getHours() + 5, istDate.getMinutes() + 30); // Convert to IST
+//   const hours = istDate.getHours();
+//   const minutes = istDate.getMinutes().toString().padStart(2, '0');
+//   const ampm = hours >= 12 ? 'PM' : 'AM';
+//   const formattedHours = hours % 12 || 12; // Converts '0' hour to '12'
+//   return `${formattedHours}:${minutes} ${ampm}`;
+// };
 
+//Api for SignIn session
 const signIn = async (req, res) => {
   try {
     const { userId, status } = req.body;
 
-    // Check if userId and status are provided
+    // Extract token from the Authorization header
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    }
+
+    let decoded;
+    try {
+      // Verify the token
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    }
+    // Check if the userId in the token matches the provided userId
+    if (!decoded || decoded._id !== userId) {
+      return res.status(401).json({ error: 'Unauthorized: Token does not match user' });
+    }
+
+    // Additional validations and logic
     if (!userId || !status) {
       return res.status(400).json({ error: 'User ID and status are required' });
     }
 
-    // Validate the status value
     const validStatuses = ['inOffice', 'inClientLocation', 'workFromHome'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: `Invalid status value. Allowed values are: ${validStatuses.join(', ')}` });
     }
 
-    // Get the current time in ISO format
-    const currentISOTime = new Date().toISOString();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-    // Create a new attendance record
-    const attendance = new Attendence({
+    // Check if a sign-in record exists for today
+    let attendance = await Attendence.findOne({
       userId,
-      date: new Date().setHours(0, 0, 0, 0), // Start of the day
-      signInTime: currentISOTime,
-      status
+      date: todayStart,
     });
 
-    // Save the attendance record
+    const currentISOTime = new Date().toISOString();
+
+    if (attendance) {
+      if (attendance.signOutTime) {
+        attendance.signInTime = currentISOTime;
+        attendance.signOutTime = null; // Clear Time for a new session
+        attendance.status = status;
+      } else {
+        return res.status(400).json({ error: 'Already signed in for today' });
+      }
+    } else {
+      attendance = new Attendence({
+        userId,
+        date: todayStart,
+        signInTime: currentISOTime,
+        status,
+      });
+    }
+
     await attendance.save();
 
-    // Return the populated attendance record with the user's full name
     const populatedAttendance = await Attendence.findById(attendance._id)
       .populate({ path: 'userId', select: 'fullName' })
-      .select('-signOutTime') // Exclude signOutTime from the response
+      .select('-signOutTime')
       .exec();
 
     res.status(201).json(populatedAttendance);
@@ -49,52 +92,43 @@ const signIn = async (req, res) => {
   }
 };
 
+//Api for SignOut session
 const signOut = async (req, res) => {
   try {
     const { userId } = req.body;
 
-    // Check if userId is provided
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Find the most recent attendance record for today
-    const todayStart = new Date().setHours(0, 0, 0, 0); // Start of the day
-    let attendance = await Attendence.find({
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    // Find today's record for the user with an active sign-in
+    const attendance = await Attendence.findOne({
       userId,
-      date: { $gte: todayStart } // Fetch all attendance records for today
-    }).sort({ signInTime: -1 }); // Sort by latest sign-in time
+      date: todayStart,
+      signOutTime: null,
+    });
 
-    // Check if any attendance records exist for today
-    if (attendance.length === 0) {
-      return res.status(400).json({ error: 'No attendance record found for today' });
-    }
-
-    // Find the latest sign-in record
-    const latestSignIn = attendance.find(record => record.signOutTime === null);
-    if (!latestSignIn) {
+    if (!attendance) {
       return res.status(400).json({ error: 'You need to sign in before signing out' });
     }
 
-    // Check if the user has already signed out for this sign-in
-    if (latestSignIn.signOutTime) {
-      return res.status(400).json({ error: 'Already signed out for the latest sign-in today' });
-    }
+    // Set signOutTime to current time
+    attendance.signOutTime = new Date().toISOString();
 
-    // Set the current time as signOutTime
-    latestSignIn.signOutTime = new Date().toISOString();
-    await latestSignIn.save();
+    // Calculate total hours worked for the day
+    const totalTimeInMs = new Date(attendance.signOutTime) - new Date(attendance.signInTime);
+    const totalHoursWorked = (totalTimeInMs / (1000 * 60 * 60)).toFixed(2);
+    attendance.workingHours = totalHoursWorked;
 
-    // Calculate total hours worked for the current sign-in
-    const totalTimeInMs = new Date(latestSignIn.signOutTime) - new Date(latestSignIn.signInTime);
-    const totalHoursWorked = Math.round(totalTimeInMs / (1000 * 60 * 60)); // Convert milliseconds to hours
+    await attendance.save();
 
-    // Populate the user's full name
-    const populatedAttendance = await Attendence.findById(latestSignIn._id)
+    const populatedAttendance = await Attendence.findById(attendance._id)
       .populate({ path: 'userId', select: 'fullName' })
       .exec();
 
-    // Respond with the attendance data and total hours worked
     res.status(200).json({
       message: 'Sign-out successful',
       attendance: populatedAttendance,
@@ -105,7 +139,6 @@ const signOut = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
-
 
 
 const applyLeave = async (req, res) => {
@@ -182,6 +215,7 @@ const applyLeave = async (req, res) => {
 };
 
 
+//Get all Employees Attendence
 const getAttendences = async(req,res) =>{
   try {
     // Fetch attendance records and populate related employee info
@@ -321,6 +355,7 @@ const getAllLeaves = async(req,res)=>{
 };
 
 
+//Get One Employee Attendence by objectID
 const getAttendenceByDate = async(req,res) => {
   const { id } = req.params;
     try {
