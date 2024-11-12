@@ -356,12 +356,12 @@ const getAllLeaves = async(req,res)=>{
 
 
 //Get One Employee Attendence by objectID
-const getAttendenceByDate = async(req,res) => {
+const getAttendenceById = async(req,res) => {
   const { id } = req.params;
     try {
       // Fetch attendance record by ID and populate related employee info
       const attendanceRecord = await Attendence.findById(id)
-        .populate('userId', 'fullName reportsTo')  // Populate `fullName` and `reportsTo` fields from `User`
+        .populate('userId', 'fullName reportsTo', { _id: 0 })  
         .lean();
 
       if (!attendanceRecord) {
@@ -386,7 +386,8 @@ const getAttendenceByDate = async(req,res) => {
       } else {
         attendanceRecord.workingHours = 0;
       }
-
+      // Optionally clear `userId` if not needed in the response
+      delete attendanceRecord.userId._id;
       // Return the processed attendance record with `fullName` and `workingHours`
       res.status(200).json(attendanceRecord);
     } catch (error) {
@@ -405,5 +406,5 @@ module.exports={
     getAttendences:getAttendences,
     addLeaves:addLeaves,
     getAllLeaves:getAllLeaves,
-    getAttendenceByDate,
+    getAttendenceById,
 }
