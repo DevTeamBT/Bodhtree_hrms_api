@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const poppler = require('pdf-poppler');
 const authMiddleware = require('../../middleware/auth');
 const pdfController = require('../../Controller/login/uplodePdfController');
 
@@ -24,7 +26,7 @@ const pdfController = require('../../Controller/login/uplodePdfController');
  router.get('/files', pdfController.getFiles);
 
  //Route to downlode files
- router.get('/download/:id', pdfController.downloadPdfById);
+ router.get('/viewPdf/:id', pdfController.displayPdfAsImage);
  
  module.exports = router;
  

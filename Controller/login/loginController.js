@@ -66,7 +66,7 @@ const userLogin = async (req, res) => {
       maxAge: 3600000, 
     });
     
-    res.send({ message: 'Login successful',token: token,
+    return res.status(200).json({ message: 'Login successful',token: token,
       user: {
           roleName: user.roleName,
           fullName: user.fullName,

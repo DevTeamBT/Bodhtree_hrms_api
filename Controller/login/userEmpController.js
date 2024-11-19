@@ -100,6 +100,7 @@ const createUser = async (req, res) => {
   }
 };
 
+
 // getall user info exclude password and sort limit 10
 const getUsers = async (req, res) => {
   try {
@@ -116,6 +117,7 @@ const getUsers = async (req, res) => {
     const totalPages = Math.ceil(totalUsers / limit); // Calculate total number of pages
   
     res.status(200).json({
+      message: "Fetched the data",
       users,
       currentPage: page,
       totalPages,
@@ -126,6 +128,31 @@ const getUsers = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
+
+
+//get all users
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+    // Check if user exists
+    if (!users) {
+      return res.status(404).json({ error: 'users not found' });
+    }
+
+    // Return the users data
+    res.status(200).json({
+      message: "Fetched all employees of Bodhtree",
+      users: users
+  });
+
+  } catch (error) {
+    console.error(error);
+
+    // Return a 500 Internal Server Error with error details
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+};
+
 
 //get using _id
 const getUser = async (req, res) => {
@@ -142,7 +169,10 @@ const getUser = async (req, res) => {
     }
 
     // Return the user data
-    res.status(200).json(user);
+    res.status(200).json({
+      message: "Fetched employee of Bodhtree",
+      user: user
+  });
   } catch (error) {
     console.error(error);
 
@@ -158,7 +188,7 @@ const addRole = async(req,res) => {
     const { roleName } = req.body;
     const newRole = new Role({ roleName });
     await newRole.save();
-    res.status(201).json(newRole);
+    res.status(201).json({message: "created role", newRole});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -169,7 +199,7 @@ const addRole = async(req,res) => {
 const getRoles = async(req,res) => {
   try {
     const roles = await Role.find();
-    res.status(200).json(roles);
+    res.status(200).json({message: "get all role",roles});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -184,7 +214,7 @@ const createDept = async (req, res) => {
       department: departmentName ? departmentName.toLowerCase().replace(/[^a-z]/g, '') : undefined,
     });
     await newDept.save();
-    res.status(201).json(newDept);
+    res.status(201).json({message: "successful created department", newDept});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -194,7 +224,7 @@ const createDept = async (req, res) => {
 const getAllDept = async(req,res) => {
   try {
     const dept = await Dept.find();
-    res.status(200).json(dept);
+    res.status(200).json({message: "get all department", dept});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -202,22 +232,15 @@ const getAllDept = async(req,res) => {
 };
 
 const updateEmp = async (req, res) => {
-  const employeeId = req.params._id;  
+  const userId = req.params._id;  
   const updateData = req.body;        
 
   // Check if the JWT contains the role information 
   const userRole = req.user.roleName; 
 
-  // Authorization check: Only allow userRole with admin
-  if (userRole !== 'admin') {
-    return res.status(403).json({ error: 'Only HR have permission to update employee records.' });
-  }
-
-  console.log(`Received update request for employee ID: ${employeeId.fullName}`);
-
   try {
     // Fetch the existing employee record
-    const existingEmployee = await User.findById(employeeId);
+    const existingEmployee = await User.findById(userId);
 
     // Check if the employee exists
     if (!existingEmployee) {
@@ -225,17 +248,27 @@ const updateEmp = async (req, res) => {
       return res.status(404).json({ error: 'Employee not found' });
     }
 
-    // Update only the fields present in the request body (Partial update)
+    // Restrict employee and manager to one-time profile edit
+    if ((userRole === 'employee' || userRole === 'manager') && existingEmployee.profileEdited) {
+      return res.status(403).json({ error: 'Profile can only be added once by the employee.' });
+    }
+
+    // Update only the fields present in the request body
     Object.keys(updateData).forEach((key) => {
       existingEmployee[key] = updateData[key];
     });
+
+    // If the request is from an employee or manager and it's their first edit, mark profileEdited as true
+    if (userRole === 'employee' || userRole === 'manager') {
+      existingEmployee.profileEdited = true;
+    }
 
     // Save the updated employee record
     const updatedEmployee = await existingEmployee.save();
 
     // Return the updated employee information as a response
     res.status(200).json({
-      message: 'Employee record updated successfully',
+      message: 'Employee record added successfully',
       updatedEmployee,
     });
   } catch (error) {
@@ -402,18 +435,42 @@ const uplodePhoto = async(req,res)=>{
     }
 };
 
-const getUserProfile = async(req,res) =>{
+const getUserProfile = async (req, res) => {
   try {
-    const photos = await UplodeImage.find();  
+    // Find all photos in the 'UplodeImage' collection and populate user details
+    const photos = await UplodeImage.find().populate('userId', 'fullName reportsTo');
+
     if (photos.length === 0) {
-      return res.status(404).json({ message: 'No photos found.' });
+      return res.status(404).json({ message: 'No profile photos found.' });
     }
-    res.status(200).json(photos); 
+
+    // Map through photos to get user data, including fullName, reportsTo, and photo
+    const profilePhotos = photos.map(photo => {
+      const filePath = photo.photo; // Assuming 'photo' contains the file name or path
+
+      if (!filePath) {
+        return res.status(400).json({ message: 'File path not found for this photo' });
+      }
+
+      // Correct the file path separator to '/'. This ensures the URL works properly
+      const photoUrl = `/uploads/${path.basename(filePath)}`;  // Construct a valid URL
+
+      // Return user info along with the image URL
+      return {
+        fullName: photo.userId.fullName,  // Display the fullName of the user
+        reportsTo: photo.userId.reportsTo,  // Display the 'reportsTo' information
+        photo: photoUrl, // This is the URL to the image, not the file path
+      };
+    });
+
+    // Send the array of photos (including user info and photo URLs)
+    res.status(200).json({ message: 'Fetched all employee photos', profilePhotos });
   } catch (error) {
     console.error('Error retrieving profile pictures:', error);
     res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
+
 
 const getSinglePhoto = async (req, res) => {
   const { photId } = req.params;
@@ -497,7 +554,8 @@ module.exports = {
   uplodePhoto:uplodePhoto,
   getUserProfile:getUserProfile,
   getSinglePhoto:getSinglePhoto,
-  uplodeExcel:uplodeExcel
+  uplodeExcel:uplodeExcel,
+  getAllUsers:getAllUsers
 };
 
 

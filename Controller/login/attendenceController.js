@@ -85,7 +85,7 @@ const signIn = async (req, res) => {
       .select('-signOutTime')
       .exec();
 
-    res.status(201).json(populatedAttendance);
+    res.status(201).json({message: 'successful signIn', populatedAttendance});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -246,7 +246,7 @@ const getAttendences = async(req,res) =>{
     });
 
     // Return the processed attendance records with full name included
-    res.status(200).json(attendanceRecords);
+    res.status(200).json({message:'get all attendance records with Names', attendanceRecords});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -345,6 +345,7 @@ const getAllLeaves = async(req,res)=>{
 
     // Send the leave data as the response
     res.status(200).json({
+      message:'get all leaves of employees',
       success: true,
       data: leaveData
     });
@@ -389,7 +390,7 @@ const getAttendenceById = async(req,res) => {
       // Optionally clear `userId` if not needed in the response
       delete attendanceRecord.userId._id;
       // Return the processed attendance record with `fullName` and `workingHours`
-      res.status(200).json(attendanceRecord);
+      res.status(200).json({message:'get single attendance',attendanceRecord});
     } catch (error) {
       console.error('Error fetching attendance:', error);
       res.status(500).json({ error: 'Internal Server Error', details: error.message });

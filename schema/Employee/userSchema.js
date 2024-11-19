@@ -72,6 +72,7 @@ const userSchema = new mongoose.Schema({
   ],
   active:{type: Boolean, required: true},
   reasonToResign:{type: String},
+  profileEdited: {type: Boolean, default: false}
 });
 
 //after filling employee details it should be frizzed by site and should be accessed to edit by HR
