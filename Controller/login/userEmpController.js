@@ -457,6 +457,7 @@ const getUserProfile = async (req, res) => {
 
       // Return user info along with the image URL
       return {
+        _id: photo._id,
         fullName: photo.userId.fullName,  // Display the fullName of the user
         reportsTo: photo.userId.reportsTo,  // Display the 'reportsTo' information
         photo: photoUrl, // This is the URL to the image, not the file path
