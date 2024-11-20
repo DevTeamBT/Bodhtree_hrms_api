@@ -457,12 +457,11 @@ const getUserProfile = async (req, res) => {
 
       // Return user info along with the image URL
       return {
-        _id: photo._id,
-        fullName: photo.userId.fullName,  // Display the fullName of the user
-        reportsTo: photo.userId.reportsTo,  // Display the 'reportsTo' information
-        photo: photoUrl, // This is the URL to the image, not the file path
-      };
-    });
+        userId: photo.userId._id,
+        fullName: photo.userId.fullName,  
+        reportsTo: photo.userId.reportsTo,  
+        photo: photoUrl,
+      };    });
 
     // Send the array of photos (including user info and photo URLs)
     res.status(200).json({ message: 'Fetched all employee photos', profilePhotos });
@@ -474,19 +473,19 @@ const getUserProfile = async (req, res) => {
 
 
 const getSinglePhoto = async (req, res) => {
-  const { photId } = req.params;
+  const { userId } = req.params;
 
   try {
-    // Check if photId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(photId)) {
-      return res.status(400).json({ message: 'Invalid photo ID format.' });
+    // Check if userId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID format.' });
     }
 
-    // Find the photo by its _id
-    const photo = await UplodeImage.findOne({ _id: photId });
+    // Find the photo by userId
+    const photo = await UplodeImage.findOne({ userId });
 
     if (!photo) {
-      return res.status(404).json({ message: 'No photo found.' });
+      return res.status(404).json({ message: 'No photo found for this user.' });
     }
 
     // Get the file path of the image
@@ -503,11 +502,10 @@ const getSinglePhoto = async (req, res) => {
     // Send the image file as a response
     res.sendFile(absolutePath);
   } catch (error) {
-    console.error('Error retrieving profile picture:', error);
+    console.error('Error retrieving photo:', error);
     res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
-
 
 //uplode employees details in db by HR
 const uplodeExcel = async(req,res) => {

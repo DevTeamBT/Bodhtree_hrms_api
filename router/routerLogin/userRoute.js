@@ -87,7 +87,7 @@ router.post('/uplode/userExcel', authMiddleware, uploaded.single('file'), uplode
 
 router.post('/uplode/photo/:userId', upload.single('photo'), uplodePhoto);
 router.get('/user/photos', getUserProfile);
-router.get('/single/photo/:photId', getSinglePhoto);
+router.get('/single/photo/:userId', getSinglePhoto);
 
 router.post('/api/login', userLogin);
 
