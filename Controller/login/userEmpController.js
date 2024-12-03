@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const multer = require('multer');
 const xlsx = require('xlsx');
+const fs = require('fs');
 const User = require('../../schema/Employee/userSchema'); 
 const Role = require('../../schema/Employee/roleSchema');
 const Dept = require('../../schema/Employee/departmentSchema');
@@ -395,45 +396,59 @@ const getEmpByManager = async (req, res) => {
 
 
 //uplode user profile photo
-const uplodePhoto = async(req,res)=>{
+const uplodePhoto = async (req, res) => {
   const { userId } = req.params;
 
-    try {
-        // Validate the userId
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({ message: 'Invalid User ID' });
-        }
-
-        // Ensure the file was uploaded
-        if (!req.file) {
-            return res.status(401).json({ message: 'No file uploaded' });
-        }
-
-        // get the fullName by userId
-        const user = await User.findById(userId); 
-        if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-        }
-        const fullName = user.fullName;
-        // Store the file path in the database
-        const newPhoto = new UplodeImage({
-            userId: userId,
-            photo: req.file.path 
-        });
-
-        await newPhoto.save();
-
-        // Send a success response
-        res.status(200).json({
-          message: `${fullName}'s profile photo uploaded successfully`,
-          filePath: req.file.path
-        });
-
-    } catch (error) {
-        console.error('Error uploading profile picture:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  try {
+    // Validate the userId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid User ID format.' });
     }
+
+    // Ensure the file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+
+    // Retrieve user details to get fullName
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const fullName = user.fullName;
+
+    // Check if a photo already exists for the user
+    const existingPhoto = await UplodeImage.findOne({ userId });
+
+    if (existingPhoto) {
+      // If an existing photo is found, delete the old file
+      if (existingPhoto.photo && fs.existsSync(existingPhoto.photo)) {
+        fs.unlinkSync(existingPhoto.photo); // Remove the old file
+      }
+
+      // Update the existing document with the new file path
+      existingPhoto.photo = req.file.path;
+      await existingPhoto.save();
+    } else {
+      // If no photo exists, create a new document
+      const newPhoto = new UplodeImage({
+        userId,
+        photo: req.file.path,
+      });
+      await newPhoto.save();
+    }
+
+    // Send a success response
+    res.status(200).json({
+      message: `${fullName}'s profile photo uploaded successfully.`,
+      filePath: req.file.path,
+    });
+  } catch (error) {
+    console.error('Error uploading profile photo:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 };
+
 
 const getUserProfile = async (req, res) => {
   try {
