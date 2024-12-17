@@ -37,19 +37,31 @@ app.set('views', path.join(__dirname, 'views'));
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
 
-// Connect to MongoDB using Mongoose
-mongoose.connect('mongodb+srv://madabhavipriyanka62:venwkNcLMK3gjCOr@cluster0.0n9xq0f.mongodb.net/mydb', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// MongoDB URIs for development and production
+const MONGO_URI_DEV = 'mongodb+srv://madabhavipriyanka62:venwkNcLMK3gjCOr@cluster0.0n9xq0f.mongodb.net/mydb';
+const MONGO_URI_PROD = 'mongodb+srv://bodhtreeIn:&t9GuKV5GBCh@cluster0.kz3wp.mongodb.net/mydb';
 
-const db = mongoose.connection;
+// Determine which URI to use based on the environment
+const isProduction = process.env.NODE_ENV === 'production';
+const MONGO_URI = isProduction ? MONGO_URI_PROD : MONGO_URI_DEV;
 
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-db.once('open', () => {
-  console.log('Connected to MongoDB');
-});
+// Function to connect to the database
+const connectToDatabase = async () => {
+  try {
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000, // 10 seconds timeout
+    });
+    console.log(`Connected to MongoDB (${isProduction ? 'production' : 'development'} environment)`);
+  } catch (error) {
+    console.error(`Error connecting to MongoDB (${isProduction ? 'production' : 'development'} environment):`, error);
+    process.exit(1);
+  }
+};
 
+// Connect to the database
+connectToDatabase();
 
 // Use the userRoutes for handling user-related routes
 const corsOptions = {
@@ -58,7 +70,7 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     // List of allowed origins
-    const allowedOrigins = ['http://127.0.0.1:5504', 'http://172.16.2.6:8000', 'http://172.16.2.4:8000', 'http://127.0.0.1:5500', 'http://localhost:3000', 'http://127.0.0.1:5505'];
+    const allowedOrigins = ['http://127.0.0.1:5504', 'http://172.16.2.6:8000', 'http://172.16.2.4:8000', 'http://127.0.0.1:5500', 'http://localhost:3000', 'http://127.0.0.1:5505', 'http://192.168.220.105:3000'];
 
     // Check if the request's origin is in the allowed list
     if (allowedOrigins.includes(origin)) {
