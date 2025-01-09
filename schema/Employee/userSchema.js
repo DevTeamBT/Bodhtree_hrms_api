@@ -1,3 +1,4 @@
+const { boolean } = require('joi');
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -23,15 +24,22 @@ const userSchema = new mongoose.Schema({
   gender: {type:"string"},
   native: {type:"string"},
   address: {type:"string"},
-  enterCode: {type:"string",required: true},
+  employeeNumber: {type:"string",required: true},
   enterseries: {type: "string", unique: true,},
   enterPassword: {type:"string", required: true, unique: true},
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   // roleId: {type: mongoose.Schema.Types.String, ref:'empRole', required: true},
   roleName:{type: "string"},
-  photo: {type: "string"},
-  probationPeriod: {type: "string"},
+  leaveBalance: {
+    annualLeave: { type: Number, default: 0 },
+    casualLeave: { type: Number, default: 0 },
+    sickLeave: { type: Number, default: 0 },
+    maternityLeave: { type: Number, default: 0 },
+    paternityLeave: { type: Number, default: 0 }
+  },
+  photo: {type: mongoose.Schema.Types.String, ref:'userPhoto'},
+  probationPeriod: {type: Number, default: 90},
   confirmationDate: {type: "string"},
   aadharNumber : {type: "string"},
   emergencyContactNumber: {type: "string"},
@@ -55,13 +63,21 @@ const userSchema = new mongoose.Schema({
   uanNumber:{type: "string"},
   paymentType:{type: "string"},
   bankAccountNumber:{type:"string"},
+  bankName:{type:"string"},
   bankIfscCode:{type: "string"},
   shiftTiming:[{
     startTime:{type: "string"},
     endTime:{type: "string"},
   }
-  ]
+  ],
+  active:{type: Boolean, required: true},
+  reasonToResign:{type: String},
+  profileEdited: {type: Boolean, default: false}
 });
+
+//after filling employee details it should be frizzed by site and should be accessed to edit by HR
+
+
 
 const User = mongoose.model('User', userSchema);
 

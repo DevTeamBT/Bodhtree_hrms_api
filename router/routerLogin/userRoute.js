@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)); // Unique filenames
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)); 
     }
 });
 
@@ -35,8 +35,16 @@ const fileFilter = (req, file, cb) => {
 // Multer middleware
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 
-
-
+const storaged = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'pdfs/'); // Ensure this folder exists
+    },
+    filename: function (req, file, cb) {
+      cb(null, file.originalname); // Preserve the original file name
+    },
+  });
+  
+  const uploaded = multer({ storaged: storaged });
 
 
 
@@ -48,6 +56,7 @@ const authMiddleware = require('../../middleware/auth');
 const createUser = userController.createUser;
 const getUsers = userController.getUsers;
 const getUser = userController.getUser;
+const getAllUsers = userController.getAllUsers;
 const addRole = userController.addRole;
 const getRoles = userController.getRoles;
 const createDept = userController.createDept;
@@ -56,28 +65,31 @@ const updateEmp = userController.updateEmp;
 const getEmpByManager = userController.getEmpByManager;
 const uplodePhoto = userController.uplodePhoto;
 const getUserProfile = userController.getUserProfile;
+const getSinglePhoto = userController.getSinglePhoto;
+const uplodeExcel = userController.uplodeExcel;
 
 
 const userLogin = loginController.userLogin;
 
 // router.post('/api/users', authMiddleware,createUser);
-router.post('/api/users',createUser);
-router.get('/api/users', getUsers);
+router.post('/api/users', authMiddleware,createUser);
+router.get('/users', getUsers);
+router.get('/all/users', getAllUsers);
 router.get('/api/users/:id', getUser);
 router.post('/api/role', addRole);
 router.get('/roles', getRoles);
 router.post('/api/derpement', createDept);
 router.get('/api/dept', getAllDept);
-router.put('/user/:_id', updateEmp);
+//  router.patch('/employeeEdit/:_id', updateEmp);
+router.patch('/employee/:_id',authMiddleware, updateEmp);
 router.get('/employees/reportsTo/:managerId/:startDate/:endDate', getEmpByManager);
+router.post('/uplode/userExcel', authMiddleware, uploaded.single('file'), uplodeExcel);
 
 router.post('/uplode/photo/:userId', upload.single('photo'), uplodePhoto);
 router.get('/user/photos', getUserProfile);
+router.get('/single/photo/:userId', getSinglePhoto);
 
 router.post('/api/login', userLogin);
-
-
-
 
 
 

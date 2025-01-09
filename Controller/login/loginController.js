@@ -26,25 +26,51 @@ const Login = require('../../schema/Employee/userSchema');
 const userLogin = async (req, res) => {
   const { officeEmail, enterPassword } = req.body;
 
+  // Validate that both officeEmail and enterPassword are provided
+  if (!officeEmail) {
+    return res.status(400).json({ error: 'Email is required' });
+  } if (!enterPassword){
+    return res.status(401).json({ error: 'Password is required' });
+  };
+
   try {
-    const user = await Login.findOne({ officeEmail });
-    if (!user) {
-      return res.status(400).send('Please enter a valid office email');
-    }
-    // console.log(`Comparing passwords: ${enterPassword} with ${user.enterPassword}`);
+    // Search for the user with a case-insensitive email match
+  const user = await Login.findOne({ officeEmail: { $regex: new RegExp(`^${officeEmail}$`, 'i') } });
+  
+  if (!user) {
+    return res.status(400).json({ error: 'Please enter a valid office email' });
+  }
+    
     if (enterPassword !== user.enterPassword) {
-      return res.status(400).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
+      return res.status(401).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
     }
 
-    // const payload = { _id: user._id };
-    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Use bcrypt to compare the provided password with the hashed password
+    // const isPasswordValid = await bcrypt.compare(enterPassword, user.enterPassword);
 
-    res.send({ message: 'Login successful',token: token,
+    // if (!isPasswordValid) {
+    //   return res.status(401).json({ error: 'Invalid Credentials', details: 'Please enter a valid password' });
+    // }
+
+    const token = jwt.sign(
+      { _id: user._id, roleName: user.roleName }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1h' } 
+    );
+
+    // Set the token in an Http cookie only
+    res.cookie('authToken', token, {
+      httpOnly: true, 
+      secure: false, 
+      sameSite: 'Strict', 
+      maxAge: 3600000, 
+    });
+    
+    return res.status(200).json({ message: 'Login successful',token: token,
       user: {
           roleName: user.roleName,
           fullName: user.fullName,
           _id: user._id,
-          // other user details you need
       }});
   } catch (err) {
     console.error(err);
@@ -58,5 +84,4 @@ const userLogin = async (req, res) => {
 
 module.exports = {
     userLogin: userLogin,
-
   };

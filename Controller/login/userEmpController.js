@@ -1,6 +1,10 @@
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const multer = require('multer');
+const xlsx = require('xlsx');
+const fs = require('fs');
 const User = require('../../schema/Employee/userSchema'); 
 const Role = require('../../schema/Employee/roleSchema');
 const Dept = require('../../schema/Employee/departmentSchema');
@@ -10,56 +14,146 @@ const UplodeImage = require('../../schema/Employee/userPhotoSchema');
 
 //post api to add employee info
 const createUser = async (req, res) => {
+  // Check if the JWT contains the role information 
+  const userRole = req.user.roleName; 
+
+  // Authorization check: Only allow userRole with admin
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only HR have permission to add employee records.' });
+  }
   try {
-    // Check if the user with enterCode or officeEmail already exists
-  const existingUser = await User.findOne({
-    $or: [{ enterCode: req.body.enterCode }, { officeEmail: req.body.officeEmail }],
-  });
-  if (existingUser) {
-    return res.status(400).json({ error: 'User already exists', details: 'Enter code or office email is already in use.' });
+    // Check the user with employeeNumber or officeEmail already exists
+    const existingUser = await User.findOne({
+      $or: [{ employeeNumber: req.body.employeeNumber }, { officeEmail: req.body.officeEmail }],
+    });
+    if (existingUser) {
+      // Check which field is causing the conflict
+      if (existingUser.employeeNumber === req.body.employeeNumber) {
+        return res.status(404).json({
+          error: 'Conflict: Enter code already in use',
+          details: 'The enter code is already associated with an existing user.',
+        });
+      } else if (existingUser.officeEmail === req.body.officeEmail) {
+        return res.status(401).json({
+          error: 'Conflict: Office email already in use',
+          details: 'The office email is already associated with an existing user.',
+        });
+      }
+    }
+  
+    // Validate office email domain
+    if (req.body.officeEmail && !req.body.officeEmail.endsWith('@bodhtree.com')) {
+      return res.status(400).json({
+        error: 'Invalid office email',
+        details: 'Office email must end with @bodhtree.com.',
+      });
+    }
+  
+     // Validate and hash the password before saving
+    //  const password = req.body.password;
+    //  if (!password || password.length < 8) {
+    //    return res.status(400).json({
+    //      error: 'Invalid password',
+    //      details: 'Password must be at least 8 characters long.',
+    //    });
+    //  }
+     
+     // Hash the password using bcrypt
+      // const hashedPassword = await bcrypt.hash(password, 10); // num is the salt rounds
+
+
+    // Get dateOfJoining and probationPeriod from the request
+    const dateOfJoining = new Date(req.body.dateOfJoining);
+    const probationPeriod = req.body.probationPeriod || 90; //by default 30 days
+  
+    // Calculate the confirmation date by adding probationPeriod to the dateOfJoining
+    const confirmationDate = new Date(dateOfJoining);
+    confirmationDate.setDate(dateOfJoining.getDate() + probationPeriod);
+  
+    // Sanitize roleName and department
+    const roleName = req.body.roleName
+      ? req.body.roleName.toLowerCase().replace(/[^a-z]/g, '')
+      : undefined;
+    const department = req.body.department
+      ? req.body.department.toLowerCase().replace(/[^a-z]/g, '')
+      : undefined;
+  
+    // Create new user with calculated confirmation date
+    const newUser = new User({
+      ...req.body,
+      // password: hashedPassword, //save the hashed password
+      roleName,
+      department,
+      dateOfJoining: dateOfJoining, // Save joining date as is
+      confirmationDate: confirmationDate,  // Save the calculated confirmation date
+    });
+  
+    const savedUser = await newUser.save();
+  
+    // Respond with the saved user data
+    return res.status(200).json(savedUser);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      details: error.message,
+    });
   }
-  // Validate office email domain
-  if (req.body.officeEmail && !req.body.officeEmail.endsWith('@bodhtree.com')) {
-    return res.status(400).json({ error: 'Invalid office email', details: 'Office email must end with @bodhtree.com.' });
-  }
-  // Validate roleId ObjectId
-  // if (!mongoose.Types.ObjectId.isValid(req.body.roleId)) {
-  //   return res.status(400).json({ error: 'Invalid ObjectId format for roleId' });
-  // }
-  // Find the role by roleId
-  // const role = await Role.findById(req.body.roleId);
-  // if (!role) {
-  //   return res.status(404).json({ error: 'Role not found' });
-  // }
-  //   // const salt = await bcrypt.genSalt(10);
-    // const hashedPassword = await bcrypt.hash(req.body.enterPassword, salt);
-  // Create new user with roleName
-  const newUser = new User({
-    ...req.body,
-    // enterPassword: hashedPassword,
-    // roleId: role.roleName ,
-    roleName: req.body.roleName ? req.body.roleName.toLowerCase().replace(/[^a-z]/g, '') : undefined,
-    department: req.body.department ? req.body.department.toLowerCase().replace(/[^a-z]/g, '') : undefined,
-  });
-  const savedUser = await newUser.save();
-  // Respond with saved user
-  return res.status(200).json(savedUser);
+};
+
+
+// getall user info exclude password and sort limit 10
+const getUsers = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+    const limit = 10; // Limit to 10 users per page
+    const skip = (page - 1) * limit; // Calculate the number of users to skip
+  
+    const users = await User.find({}, '-enterPassword')
+      .sort({ employeeNumber: 1 })
+      .skip(skip)  // Skip users based on the current page
+      .limit(limit);  // Limit to 10 users
+  
+    const totalUsers = await User.countDocuments(); // Get total count of users
+    const totalPages = Math.ceil(totalUsers / limit); // Calculate total number of pages
+  
+    res.status(200).json({
+      message: "Fetched the data",
+      users,
+      currentPage: page,
+      totalPages,
+      totalUsers
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
 
-//getall user info exclude password
-const getUsers = async (req, res) => {
+
+//get all users
+const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}, '-enterPassword');
-    res.status(200).json(users);
+    const users = await User.find();
+    // Check if user exists
+    if (!users) {
+      return res.status(404).json({ error: 'users not found' });
+    }
+
+    // Return the users data
+    res.status(200).json({
+      message: "Fetched all employees of Bodhtree",
+      users: users
+  });
+
   } catch (error) {
     console.error(error);
+
+    // Return a 500 Internal Server Error with error details
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
+
 
 //get using _id
 const getUser = async (req, res) => {
@@ -68,7 +162,7 @@ const getUser = async (req, res) => {
     const userId = req.params.id;
 
     // Fetch the user by _id, excluding the 'enterPassword' field
-    const user = await User.findById(userId, '-enterPassword');
+    const user = await User.findById(userId);
 
     // Check if user exists
     if (!user) {
@@ -76,7 +170,10 @@ const getUser = async (req, res) => {
     }
 
     // Return the user data
-    res.status(200).json(user);
+    res.status(200).json({
+      message: "Fetched employee of Bodhtree",
+      user: user
+  });
   } catch (error) {
     console.error(error);
 
@@ -92,7 +189,7 @@ const addRole = async(req,res) => {
     const { roleName } = req.body;
     const newRole = new Role({ roleName });
     await newRole.save();
-    res.status(201).json(newRole);
+    res.status(201).json({message: "created role", newRole});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -103,7 +200,7 @@ const addRole = async(req,res) => {
 const getRoles = async(req,res) => {
   try {
     const roles = await Role.find();
-    res.status(200).json(roles);
+    res.status(200).json({message: "get all role",roles});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -118,7 +215,7 @@ const createDept = async (req, res) => {
       department: departmentName ? departmentName.toLowerCase().replace(/[^a-z]/g, '') : undefined,
     });
     await newDept.save();
-    res.status(201).json(newDept);
+    res.status(201).json({message: "successful created department", newDept});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -128,65 +225,53 @@ const createDept = async (req, res) => {
 const getAllDept = async(req,res) => {
   try {
     const dept = await Dept.find();
-    res.status(200).json(dept);
+    res.status(200).json({message: "get all department", dept});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
 
-const updateEmp = async(req,res) => {
-  const employeeId = req.params._id;
-  const updateData = req.body;
-  console.log(`Received update request for employee ID: ${employeeId}`);
-  
-  // Exclude fields that should not be updated
-  const fieldsToExclude = ['officeEmail', 'enterCode', 'enterPassword'];
+const updateEmp = async (req, res) => {
+  const userId = req.params._id;  
+  const updateData = req.body;        
 
-  fieldsToExclude.forEach(field => {
-    if (updateData.hasOwnProperty(field)) {
-      delete updateData[field];
-    }
-  });
+  // Check if the JWT contains the role information 
+  const userRole = req.user.roleName; 
 
   try {
-    const existingEmployee = await User.findById(employeeId);
+    // Fetch the existing employee record
+    const existingEmployee = await User.findById(userId);
 
+    // Check if the employee exists
     if (!existingEmployee) {
       console.log('Employee not found');
-      return res.status(404).send({ message: 'Employee not found' });
+      return res.status(404).json({ error: 'Employee not found' });
     }
 
-    // Check if roleId is in the updateData
-    if (updateData.roleId) {
-      // Validate roleId ObjectId
-      if (!mongoose.Types.ObjectId.isValid(updateData.roleId)) {
-        return res.status(400).json({ error: 'Invalid ObjectId format for roleId' });
-      }
-
-      // Find the role by roleId
-      const role = await Role.findById(updateData.roleId);
-      if (!role) {
-        return res.status(404).json({ error: 'Role not found' });
-      }
-
-      // Add roleName to updateData
-      updateData.roleId =  role.roleName;
+    // Restrict employee and manager to one-time profile edit
+    if ((userRole === 'employee' || userRole === 'manager') && existingEmployee.profileEdited) {
+      return res.status(403).json({ error: 'Profile can only be added once by the employee.' });
     }
 
-    // Check if the update data is different from existing data
-    const isDataSame = Object.keys(updateData).every(key => 
-      updateData[key] === existingEmployee[key]?.toString()
-    );
+    // Update only the fields present in the request body
+    Object.keys(updateData).forEach((key) => {
+      existingEmployee[key] = updateData[key];
+    });
 
-    if (isDataSame) {
-      console.log('No changes in the update data');
-      return res.status(200).send({ message: 'No changes were made. The data is already up to date.' });
+    // If the request is from an employee or manager and it's their first edit, mark profileEdited as true
+    if (userRole === 'employee' || userRole === 'manager') {
+      existingEmployee.profileEdited = true;
     }
 
-    const updatedEmployee = await User.findByIdAndUpdate(employeeId, updateData, { new: true });
-    console.log('Update data:', updateData);
-    res.status(200).send(updatedEmployee);
+    // Save the updated employee record
+    const updatedEmployee = await existingEmployee.save();
+
+    // Return the updated employee information as a response
+    res.status(200).json({
+      message: 'Employee record added successfully',
+      updatedEmployee,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
@@ -195,7 +280,6 @@ const updateEmp = async(req,res) => {
 
 
 // Helper function to format date to IST and in en-US locale
-
 const formatToIST = (date) => {
   if (!date) return 'Not provided';
 
@@ -311,61 +395,165 @@ const getEmpByManager = async (req, res) => {
 };
 
 
-
 //uplode user profile photo
-const uplodePhoto = async(req,res)=>{
+const uplodePhoto = async (req, res) => {
   const { userId } = req.params;
 
-    try {
-        // Validate the userId
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({ message: 'Invalid User ID' });
-        }
-
-        // Ensure the file was uploaded
-        if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-
-        // get the fullName by userId
-        const user = await User.findById(userId); 
-        if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-        }
-        const fullName = user.fullName;
-        // Store the file path in the database
-        const newPhoto = new UplodeImage({
-            userId: userId,
-            photo: req.file.path 
-        });
-
-        await newPhoto.save();
-
-        // Send a success response
-        res.status(200).json({
-          message: `${fullName}'s profile photo uploaded successfully`,
-          filePath: req.file.path
-        });
-
-    } catch (error) {
-        console.error('Error uploading profile picture:', error);
-        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  try {
+    // Validate the userId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid User ID format.' });
     }
+
+    // Ensure the file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+
+    // Retrieve user details to get fullName
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const fullName = user.fullName;
+
+    // Check if a photo already exists for the user
+    const existingPhoto = await UplodeImage.findOne({ userId });
+
+    if (existingPhoto) {
+      // If an existing photo is found, delete the old file
+      if (existingPhoto.photo && fs.existsSync(existingPhoto.photo)) {
+        fs.unlinkSync(existingPhoto.photo); // Remove the old file
+      }
+
+      // Update the existing document with the new file path
+      existingPhoto.photo = req.file.path;
+      await existingPhoto.save();
+    } else {
+      // If no photo exists, create a new document
+      const newPhoto = new UplodeImage({
+        userId,
+        photo: req.file.path,
+      });
+      await newPhoto.save();
+    }
+
+    // Send a success response
+    res.status(200).json({
+      message: `${fullName}'s profile photo uploaded successfully.`,
+      filePath: req.file.path,
+    });
+  } catch (error) {
+    console.error('Error uploading profile photo:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 };
 
-const getUserProfile = async(req,res) =>{
+
+const getUserProfile = async (req, res) => {
   try {
-    const photos = await UplodeImage.find();  
+    // Find all photos in the 'UplodeImage' collection and populate user details
+    const photos = await UplodeImage.find().populate('userId', 'fullName reportsTo');
+
     if (photos.length === 0) {
-      return res.status(404).json({ message: 'No photos found.' });
+      return res.status(404).json({ message: 'No profile photos found.' });
     }
-    res.status(200).json(photos); 
+
+    // Map through photos to get user data, including fullName, reportsTo, and photo
+    const profilePhotos = photos.map(photo => {
+      const filePath = photo.photo; // Assuming 'photo' contains the file name or path
+
+      if (!filePath) {
+        return res.status(400).json({ message: 'File path not found for this photo' });
+      }
+
+      // Correct the file path separator to '/'. This ensures the URL works properly
+      const photoUrl = `/uploads/${path.basename(filePath)}`;  // Construct a valid URL
+
+      // Return user info along with the image URL
+      return {
+        userId: photo.userId._id,
+        fullName: photo.userId.fullName,  
+        reportsTo: photo.userId.reportsTo,  
+        photo: photoUrl,
+      };    });
+
+    // Send the array of photos (including user info and photo URLs)
+    res.status(200).json({ message: 'Fetched all employee photos', profilePhotos });
   } catch (error) {
     console.error('Error retrieving profile pictures:', error);
     res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 };
 
+
+const getSinglePhoto = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Check if userId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID format.' });
+    }
+
+    // Find the photo by userId
+    const photo = await UplodeImage.findOne({ userId });
+
+    if (!photo) {
+      return res.status(404).json({ message: 'No photo found for this user.' });
+    }
+
+    // Get the file path of the image
+    const filePath = photo.photo;
+
+    // Check if filePath is valid
+    if (!filePath) {
+      return res.status(400).json({ message: 'File path not found for this photo.' });
+    }
+
+    // Construct the absolute path to the image
+    const absolutePath = path.join(__dirname, '../../uploads', path.basename(filePath));
+
+    // Send the image file as a response
+    res.sendFile(absolutePath);
+  } catch (error) {
+    console.error('Error retrieving photo:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
+};
+
+//uplode employees details in db by HR
+const uplodeExcel = async(req,res) => {
+  const userRole = req.user?.roleName;
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only HR have permission to upload employee records.' });
+  }
+
+  // Use the buffer directly
+  const fileBuffer = req.file.buffer;
+
+  try {
+      // Read Excel file from buffer
+      const workbook = xlsx.read(fileBuffer, { type: 'buffer' }); // Specify type as buffer
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      // Convert sheet data to JSON
+      const usersData = xlsx.utils.sheet_to_json(sheet);
+
+  // Validate each row for essential fields
+  // const validUsersData = usersData.filter(user => user.fullName && user.email && user.position);
+  // if (validUsersData.length !== usersData.length) {
+  //   return res.status(400).json({ error: 'Some records are missing required fields like fullName, email, or position.' });
+  // }
+ 
+    // Insert data directly into the database
+    await User.insertMany(usersData);
+    res.status(200).json({ message: 'User data uploaded successfully from Excel' });
+  } catch (error) {
+    console.error('Error uploading user data:', error);
+    res.status(500).json({ error: 'Error uploading data', details: error.message });
+  }
+};
 
 module.exports = {
   createUser: createUser,
@@ -379,6 +567,9 @@ module.exports = {
   getEmpByManager:getEmpByManager,
   uplodePhoto:uplodePhoto,
   getUserProfile:getUserProfile,
+  getSinglePhoto:getSinglePhoto,
+  uplodeExcel:uplodeExcel,
+  getAllUsers:getAllUsers
 };
 
 
